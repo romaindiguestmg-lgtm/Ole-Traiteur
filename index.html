@@ -106,37 +106,22 @@ img{display:block;max-width:100%}
   .item.on{padding-left:0;border-left:0}
 }
 
-/* paella : ticket */
-.paella{padding-block:130px;position:relative;overflow:hidden;isolation:isolate}
-.paella .bg{position:absolute;inset:0;z-index:-1}
-.paella .bg img{width:100%;height:100%;object-fit:cover;filter:saturate(.9)}
-.paella .bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(23,18,15,.78),rgba(23,18,15,.95) 70%)}
-.paella .head{text-align:center;max-width:680px;margin-inline:auto}
-.paella h2{font-size:clamp(40px,5vw,66px);margin-top:14px}
-.paella .head p{margin-top:18px;color:var(--lino-dim)}
-.recipes{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:44px}
-.rc{position:relative}
-.rc input{position:absolute;opacity:0;pointer-events:none}
-.rc span{display:block;padding:12px 22px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-size:15px;transition:all .25s}
-.rc span small{color:var(--lino-dim);margin-left:6px}
-.rc input:checked+span{background:var(--cobre);border-color:var(--cobre);color:#1A120C}
-.rc input:checked+span small{color:#3A2412}
-.rc input:focus-visible+span{outline:2px solid var(--cobre);outline-offset:3px}
-.ticket{margin:44px auto 0;max-width:760px;display:grid;grid-template-columns:1.2fr 1fr;background:var(--lino);color:var(--piedra)}
-.ticket .a{padding:36px;display:grid;gap:24px}
-.ticket .b{padding:36px;border-left:2px dashed #BBA990;display:flex;flex-direction:column;justify-content:space-between;gap:24px;background:#E2D5C3}
-.t-lbl{display:block;font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:#7A6A5B;margin-bottom:8px}
-.range-row{display:flex;align-items:center;gap:18px}
-input[type=range]{flex:1;accent-color:#9A5A2C}
-.count{font-family:var(--display);font-size:40px;line-height:1;min-width:2.2ch;text-align:right;font-variant-numeric:tabular-nums}
-.ticket input[type=date],.ticket select{width:100%;font:300 16px var(--body);color:var(--piedra);background:transparent;border:0;border-bottom:1px solid #B9A994;padding:8px 0;border-radius:0}
-.pan{font-family:var(--display);font-size:22px}
-.amt{font-family:var(--display);font-size:56px;line-height:1;font-variant-numeric:tabular-nums}
-.ticket small{font-size:13px;color:#6E5F52}
-.ticket .btn{border-color:var(--piedra);color:var(--piedra);justify-content:center}
-.ticket .btn:hover{background:var(--piedra);color:var(--lino)}
-.ok{max-width:760px;margin:16px auto 0;border-left:2px solid var(--cobre);padding:14px 18px;font-size:15px;background:rgba(201,138,78,.1)}
-@media (max-width:700px){.ticket{grid-template-columns:1fr}.ticket .b{border-left:0;border-top:2px dashed #BBA990}.ticket .a,.ticket .b{padding:24px}}
+/* commander : deux modes */
+.order{padding-block:130px;position:relative;overflow:hidden;isolation:isolate}
+.order .bg{position:absolute;inset:0;z-index:-1}
+.order .bg img{width:100%;height:100%;object-fit:cover;filter:saturate(.9)}
+.order .bg::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(23,18,15,.78),rgba(23,18,15,.95) 70%)}
+.order .head{text-align:center;max-width:680px;margin-inline:auto}
+.order h2{font-size:clamp(40px,5vw,66px);margin-top:14px}
+.order .head p{margin-top:18px;color:var(--lino-dim)}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:760px;margin:44px auto 0}
+.mode{display:grid;gap:10px;align-content:start;padding:32px;background:rgba(23,18,15,.72);backdrop-filter:blur(6px);border:1px solid rgba(234,223,208,.22);text-decoration:none;color:var(--lino);transition:border-color .3s,background .3s}
+.mode:hover{border-color:var(--cobre);background:rgba(23,18,15,.9)}
+.mode .t{font-family:var(--display);font-size:32px;line-height:1.1}
+.mode .s{color:var(--lino-dim);font-size:16px}
+.mode .go{margin-top:10px;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--cobre)}
+.order .note{text-align:center;margin-top:22px;font-family:var(--ital);font-style:italic;font-size:19px;color:var(--lino-dim)}
+@media (max-width:700px){.modes{grid-template-columns:1fr}.mode{padding:24px}.order{padding-block:90px}}
 
 /* événements : étapes */
 .events{background:var(--piedra-2);padding-block:120px;border-block:1px solid var(--line)}
@@ -229,7 +214,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
 
 <header class="top">
   <div class="wrap">
-    <nav class="l" aria-label="Sections"><a href="#carte" data-i18n="nav.carte">La carte</a><a href="#paella">Paella</a></nav>
+    <nav class="l" aria-label="Sections"><a href="#carte" data-i18n="nav.carte">La carte</a><a href="#commander" data-i18n="nav.order">Commander</a></nav>
     <a href="#top" aria-label="Olé, accueil"><img src="images/logo-ole-clair.png" alt="Olé"></a>
     <nav class="r" aria-label="Contact">
       <a href="#evenements" data-i18n="nav.evenements">Événements</a>
@@ -253,7 +238,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
         <p class="lead" data-i18n="hero.lead">Tapas, paellas et douceurs cuisinées chaque matin, présentées en vitrine, à emporter ou servies à vos invités.</p>
         <div class="ctas">
           <a class="btn cu" href="#carte" data-i18n="hero.cta1">Voir la carte</a>
-          <a class="btn" href="commande/" data-i18n="hero.cta2">Commander</a>
+          <a class="btn" href="#commander" data-i18n="hero.cta2">Commander</a>
         </div>
         <p class="since">Hecho en casa, cada mañana.</p>
       </div>
@@ -280,36 +265,19 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
     </div>
   </section>
 
-  <section class="paella" id="paella">
-    <div class="bg" aria-hidden="true"><img src="images/paella.jpg" data-x="paella" alt=""></div>
+  <section class="order" id="commander">
+    <div class="bg" aria-hidden="true"><img src="images/paella.jpg" alt=""></div>
     <div class="wrap">
       <div class="head">
-        <p class="over" data-i18n="paella.kicker">Sur commande</p>
-        <h2><span data-i18n="paella.h2a">Composez</span> <em data-i18n="paella.h2b">votre paella</em></h2>
-        <p data-i18n="paella.lead">Choisissez la recette et le nombre de convives. On prépare la paellera qu'il vous faut.</p>
+        <p class="over" data-i18n="order.kicker">Commande en ligne</p>
+        <h2><span data-i18n="order.h2a">Commandez,</span> <em data-i18n="order.h2b">on prépare.</em></h2>
+        <p data-i18n="order.lead">Toute la carte, tapas, paellas et desserts, prête à l'heure que vous choisissez. Paellas à commander la veille.</p>
       </div>
-      <form id="cfg" novalidate>
-        <div class="recipes" role="radiogroup" aria-label="Recette">
-          <label class="rc"><input type="radio" name="type" id="t-val" value="Valenciana" data-p="11"><span>Valenciana<small>11 €</small></span></label>
-          <label class="rc"><input type="radio" name="type" id="t-mix" value="Mixta" data-p="12" checked><span>Mixta<small>12 €</small></span></label>
-          <label class="rc"><input type="radio" name="type" id="t-mar" value="Marisco" data-p="15"><span>Marisco<small>15 €</small></span></label>
-          <label class="rc"><input type="radio" name="type" id="t-neg" value="Negra" data-p="14"><span>Negra<small>14 €</small></span></label>
-          <label class="rc"><input type="radio" name="type" id="t-ver" value="Verduras" data-p="10"><span>Verduras<small>10 €</small></span></label>
-        </div>
-        <div class="ticket">
-          <div class="a">
-            <div><label class="t-lbl" for="pers" data-i18n="ticket.pers">Convives</label><div class="range-row"><input type="range" id="pers" min="4" max="60" value="12"><span class="count" id="persOut">12</span></div></div>
-            <div><label class="t-lbl" for="date" data-i18n="ticket.date">Pour le</label><input type="date" id="date"></div>
-            <div><label class="t-lbl" for="mode" data-i18n="ticket.modeLabel">Retrait ou livraison</label><select id="mode"><option value="0" data-i18n="ticket.mode.pickup">Retrait en boutique</option><option value="15" data-i18n="ticket.mode.delivery">Livraison sur Nice (+15 €)</option></select></div>
-          </div>
-          <div class="b">
-            <div><span class="t-lbl" data-i18n="ticket.panLabel">Votre paellera</span><div class="pan" id="pan">60 cm</div></div>
-            <div><span class="t-lbl" data-i18n="ticket.amtLabel">Estimation TTC</span><div class="amt" id="amt">144 €</div><small id="per">12 € par personne</small></div>
-            <button class="btn" type="submit" data-i18n="ticket.submit">Envoyer ma commande</button>
-          </div>
-        </div>
-        <div class="ok" id="ok1" hidden></div>
-      </form>
+      <div class="modes">
+        <a class="mode" href="commande/?mode=collect" data-mode-link="collect"><span class="t" data-i18n="order.collect">Click &amp; Collect</span><span class="s" data-i18n="order.collectSub">Retrait en boutique, au créneau de votre choix</span><span class="go" data-i18n="order.go">Commander →</span></a>
+        <a class="mode" href="commande/?mode=delivery" data-mode-link="delivery"><span class="t" data-i18n="order.delivery">Livraison</span><span class="s" data-i18n="order.deliverySub">Sur Nice, frais selon votre quartier</span><span class="go" data-i18n="order.go">Commander →</span></a>
+      </div>
+      <p class="note" data-i18n="order.note">Paiement en ligne · confirmation immédiate</p>
     </div>
   </section>
 
@@ -371,7 +339,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
     </div>
   </section>
 </main>
-<div class="mbar"><a class="btn" href="#carte" data-i18n="nav.carte">La carte</a><a class="btn cu" href="commande/" data-i18n="mbar.order">Commander</a></div>
+<div class="mbar"><a class="btn" href="#carte" data-i18n="nav.carte">La carte</a><a class="btn cu" href="#commander" data-i18n="mbar.order">Commander</a></div>
 
 <footer>
   <div class="wrap">
@@ -394,7 +362,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
 (function(){
   const I18N = {
     fr:{
-      nav:{carte:"La carte",evenements:"Événements",reserver:"Réserver"},
+      nav:{carte:"La carte",evenements:"Événements",reserver:"Réserver",order:"Commander"},
       hero:{kicker:"Traiteur espagnol · Nice",h1a:"La table espagnole",h1b:"comme à la maison.",lead:"Tapas, paellas et douceurs cuisinées chaque matin, présentées en vitrine, à emporter ou servies à vos invités.",cta1:"Voir la carte",cta2:"Commander",perPers:"/ pers."},
       promise:{"1":"Cuisiné chaque matin","2":"Riz bomba & safran d'Espagne","3":"Livraison sur Nice","4":"De 4 à 150 convives"},
       carte:{
@@ -412,15 +380,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
           crema:{n:"Crema catalana",p:"4,50 € pièce",d:"Cannelle et citron sous un sucre qui craque."}
         }
       },
-      paella:{kicker:"Sur commande",h2a:"Composez",h2b:"votre paella",lead:"Choisissez la recette et le nombre de convives. On prépare la paellera qu'il vous faut."},
-      ticket:{
-        pers:"Convives",date:"Pour le",modeLabel:"Retrait ou livraison",
-        mode:{pickup:"Retrait en boutique",delivery:"Livraison sur Nice (+15 €)"},
-        panLabel:"Votre paellera",amtLabel:"Estimation TTC",submit:"Envoyer ma commande",
-        perPerson:"{p} € par personne",plusDelivery:" + livraison 15 €",
-        confirmTitle:"Commande prête.",confirmBody:"Paella {type} pour {n} personnes, {date}. Sur le vrai site, Olé la reçoit par e-mail et vous rappelle pour confirmer.",
-        dateTbd:"date à préciser"
-      },
+      order:{kicker:"Commande en ligne",h2a:"Commandez,",h2b:"on prépare.",lead:"Toute la carte, tapas, paellas et desserts, prête à l'heure que vous choisissez. Paellas à commander la veille.",collect:"Click & Collect",collectSub:"Retrait en boutique, au créneau de votre choix",delivery:"Livraison",deliverySub:"Sur Nice, frais selon votre quartier",go:"Commander →",note:"Paiement en ligne · confirmation immédiate"},
       events:{
         kicker:"Traiteur",h2a:"Vos",h2b:"événements",h2tail:", du début à la fin",
         lead:"Anniversaires, mariages, soirées d'entreprise, de 20 à 150 invités.",cta:"Demander un devis",
@@ -448,7 +408,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
       demo:{badge:"Maquette · contenus d'exemple"}
     },
     en:{
-      nav:{carte:"The menu",evenements:"Events",reserver:"Book"},
+      nav:{carte:"The menu",evenements:"Events",reserver:"Book",order:"Order"},
       hero:{kicker:"Spanish caterer · Nice",h1a:"The Spanish table",h1b:"just like home.",lead:"Tapas, paellas and sweets cooked fresh every morning, displayed in our window, to take away or served to your guests.",cta1:"View the menu",cta2:"Order",perPers:"/ person"},
       promise:{"1":"Cooked fresh every morning","2":"Bomba rice & Spanish saffron","3":"Delivery in Nice","4":"From 4 to 150 guests"},
       carte:{
@@ -466,15 +426,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
           crema:{n:"Crema catalana",p:"€4.50 each",d:"Cinnamon and lemon under a crackling caramelised sugar."}
         }
       },
-      paella:{kicker:"Made to order",h2a:"Build",h2b:"your paella",lead:"Choose the recipe and the number of guests. We'll prepare the right pan for you."},
-      ticket:{
-        pers:"Guests",date:"For",modeLabel:"Pickup or delivery",
-        mode:{pickup:"Pickup in store",delivery:"Delivery in Nice (+€15)"},
-        panLabel:"Your paella pan",amtLabel:"Estimated total",submit:"Send my order",
-        perPerson:"€{p} per person",plusDelivery:" + €15 delivery",
-        confirmTitle:"Order ready.",confirmBody:"{type} paella for {n} people, {date}. On the real site, Olé receives it by email and calls you back to confirm.",
-        dateTbd:"date to be confirmed"
-      },
+      order:{kicker:"Online ordering",h2a:"You order,",h2b:"we cook.",lead:"The whole menu, tapas, paellas and desserts, ready at the time you choose. Paellas to be ordered the day before.",collect:"Click & Collect",collectSub:"Pick up in store, at the time slot you choose",delivery:"Delivery",deliverySub:"In Nice, fee depends on your area",go:"Order →",note:"Online payment · instant confirmation"},
       events:{
         kicker:"Catering",h2a:"Your",h2b:"events",h2tail:", from start to finish",
         lead:"Birthdays, weddings, corporate evenings, from 20 to 150 guests.",cta:"Request a quote",
@@ -502,7 +454,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
       demo:{badge:"Mockup · sample content"}
     },
     it:{
-      nav:{carte:"Il menù",evenements:"Eventi",reserver:"Prenota"},
+      nav:{carte:"Il menù",evenements:"Eventi",reserver:"Prenota",order:"Ordina"},
       hero:{kicker:"Catering spagnolo · Nizza",h1a:"La tavola spagnola",h1b:"come a casa.",lead:"Tapas, paella e dolci cucinati ogni mattina, esposti in vetrina, da asporto o serviti ai vostri ospiti.",cta1:"Vedi il menù",cta2:"Ordina",perPers:"/ persona"},
       promise:{"1":"Cucinato ogni mattina","2":"Riso bomba e zafferano di Spagna","3":"Consegna a Nizza","4":"Da 4 a 150 ospiti"},
       carte:{
@@ -520,15 +472,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
           crema:{n:"Crema catalana",p:"4,50 € al pezzo",d:"Cannella e limone sotto uno zucchero croccante."}
         }
       },
-      paella:{kicker:"Su ordinazione",h2a:"Componi",h2b:"la tua paella",lead:"Scegli la ricetta e il numero di ospiti. Prepariamo la paellera che ti serve."},
-      ticket:{
-        pers:"Ospiti",date:"Per il",modeLabel:"Ritiro o consegna",
-        mode:{pickup:"Ritiro in negozio",delivery:"Consegna a Nizza (+15 €)"},
-        panLabel:"La tua paellera",amtLabel:"Stima totale",submit:"Invia il mio ordine",
-        perPerson:"{p} € a persona",plusDelivery:" + consegna 15 €",
-        confirmTitle:"Ordine pronto.",confirmBody:"Paella {type} per {n} persone, {date}. Sul sito reale, Olé la riceve via e-mail e vi richiama per confermare.",
-        dateTbd:"data da confermare"
-      },
+      order:{kicker:"Ordine online",h2a:"Voi ordinate,",h2b:"noi cuciniamo.",lead:"Tutto il menù, tapas, paella e dolci, pronto all'ora che scegliete. Paella da ordinare il giorno prima.",collect:"Click & Collect",collectSub:"Ritiro in negozio, all'orario che preferite",delivery:"Consegna",deliverySub:"A Nizza, costo secondo il quartiere",go:"Ordina →",note:"Pagamento online · conferma immediata"},
       events:{
         kicker:"Catering",h2a:"I vostri",h2b:"eventi",h2tail:", dall'inizio alla fine",
         lead:"Compleanni, matrimoni, serate aziendali, da 20 a 150 ospiti.",cta:"Richiedi un preventivo",
@@ -556,7 +500,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
       demo:{badge:"Modello · contenuti di esempio"}
     },
     es:{
-      nav:{carte:"La carta",evenements:"Eventos",reserver:"Reservar"},
+      nav:{carte:"La carta",evenements:"Eventos",reserver:"Reservar",order:"Pedir"},
       hero:{kicker:"Catering español · Niza",h1a:"La mesa española",h1b:"como en casa.",lead:"Tapas, paellas y dulces cocinados cada mañana, presentados en el escaparate, para llevar o servidos a sus invitados.",cta1:"Ver la carta",cta2:"Pedir",perPers:"/ persona"},
       promise:{"1":"Cocinado cada mañana","2":"Arroz bomba y azafrán de España","3":"Entrega en Niza","4":"De 4 a 150 comensales"},
       carte:{
@@ -574,15 +518,7 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
           crema:{n:"Crema catalana",p:"4,50 € la unidad",d:"Canela y limón bajo un azúcar crujiente."}
         }
       },
-      paella:{kicker:"Por encargo",h2a:"Compón",h2b:"tu paella",lead:"Elige la receta y el número de comensales. Preparamos la paellera que necesitas."},
-      ticket:{
-        pers:"Comensales",date:"Para el",modeLabel:"Recogida o entrega",
-        mode:{pickup:"Recogida en tienda",delivery:"Entrega en Niza (+15 €)"},
-        panLabel:"Tu paellera",amtLabel:"Estimación total",submit:"Enviar mi pedido",
-        perPerson:"{p} € por persona",plusDelivery:" + entrega 15 €",
-        confirmTitle:"Pedido listo.",confirmBody:"Paella {type} para {n} personas, {date}. En el sitio real, Olé la recibe por correo y le llama para confirmar.",
-        dateTbd:"fecha por confirmar"
-      },
+      order:{kicker:"Pedido online",h2a:"Usted pide,",h2b:"nosotros cocinamos.",lead:"Toda la carta, tapas, paellas y postres, lista a la hora que elija. Paellas por encargo el día anterior.",collect:"Click & Collect",collectSub:"Recogida en tienda, a la hora que elija",delivery:"Entrega",deliverySub:"En Niza, gastos según su barrio",go:"Pedir →",note:"Pago online · confirmación inmediata"},
       events:{
         kicker:"Catering",h2a:"Sus",h2b:"eventos",h2tail:", de principio a fin",
         lead:"Cumpleaños, bodas, eventos de empresa, de 20 a 150 invitados.",cta:"Solicitar presupuesto",
@@ -610,7 +546,6 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
       demo:{badge:"Maqueta · contenido de ejemplo"}
     }
   };
-  const LOCALE = {fr:"fr-FR",en:"en-GB",it:"it-IT",es:"es-ES"};
   let lang = localStorage.getItem("ole_lang") || "fr";
 
   function t(path, vars){
@@ -661,23 +596,11 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
   document.getElementById("strip").innerHTML=["tortilla","gambas","crema","bravas","jamon","padron","albondigas","churros","croquetas"].map(k=>`<figure><img src="${IMG[k]}" alt=""></figure>`).join("");
   const dv=document.getElementById("dv");const d2=new Date();d2.setDate(d2.getDate()+30);dv.value=d2.toISOString().slice(0,10);
   if("IntersectionObserver" in window && !matchMedia("(prefers-reduced-motion: reduce)").matches){
-    const els=document.querySelectorAll(".sec-rv, .ticket, .steps li, .contact .wrap, .insta .strip");
+    const els=document.querySelectorAll(".sec-rv, .modes, .steps li, .contact .wrap, .insta .strip");
     els.forEach(e=>{const r=e.getBoundingClientRect();if(r.top>innerHeight){e.classList.add("rv","pre")}});
     const ro=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.remove("pre");ro.unobserve(e.target)}}),{rootMargin:"0px 0px -10% 0px"});
     els.forEach(e=>ro.observe(e));
   }
-  const pans=[[6,"40 cm"],[10,"50 cm"],[15,"60 cm"],[22,"70 cm"],[30,"80 cm"],[45,"90 cm"],[60,"1 m"]];
-  const f=document.getElementById("cfg"),pers=document.getElementById("pers"),out=document.getElementById("persOut"),amt=document.getElementById("amt"),pan=document.getElementById("pan"),per=document.getElementById("per"),mode=document.getElementById("mode"),date=document.getElementById("date"),ok1=document.getElementById("ok1");
-  const d=new Date();d.setDate(d.getDate()+3);date.value=d.toISOString().slice(0,10);
-  const mn=new Date();mn.setDate(mn.getDate()+2);date.min=mn.toISOString().slice(0,10);
-  function upd(){const n=+pers.value,tEl=f.querySelector("input[name=type]:checked"),p=+tEl.dataset.p,pn=pans.find(([m])=>n<=m)||pans[pans.length-1];
-    out.textContent=n;pan.textContent=pn[1]+" · "+tEl.value;amt.textContent=(n*p+ +mode.value).toLocaleString(LOCALE[lang])+" €";
-    per.textContent=t("ticket.perPerson",{p})+(+mode.value?t("ticket.plusDelivery"):"");ok1.hidden=true}
-  f.addEventListener("input",upd);
-  f.addEventListener("submit",e=>{e.preventDefault();
-    const dd=date.value?new Date(date.value+"T12:00").toLocaleDateString(LOCALE[lang],{weekday:"long",day:"numeric",month:"long"}):t("ticket.dateTbd");
-    const typeVal=f.querySelector("input[name=type]:checked").value;
-    ok1.innerHTML=`<b>${t("ticket.confirmTitle")}</b> `+t("ticket.confirmBody",{type:typeVal,n:pers.value,date:dd});ok1.hidden=false});
   document.getElementById("devis").addEventListener("submit",e=>{e.preventDefault();const o=document.getElementById("ok2");
     const firstName=document.getElementById("nm").value.split(" ")[0];
     o.innerHTML=`<b>${t("contact.confirmTitle",{name:firstName})}</b> `+t("contact.confirmBody",{occ:document.getElementById("occ").value,g:document.getElementById("g").value});o.hidden=false});
@@ -700,8 +623,8 @@ footer .legal{grid-column:1/-1;display:flex;flex-wrap:wrap;justify-content:space
     });
     document.querySelectorAll(".langbtn").forEach(b=>b.classList.toggle("on",b.dataset.lang===l));
     show(curK);
-    upd();
-    ok1.hidden=true;document.getElementById("ok2").hidden=true;
+    document.querySelectorAll("[data-mode-link]").forEach(a=>{a.href="commande/?mode="+a.dataset.modeLink+"&lang="+(l==="fr"?"fr":"en")});
+    document.getElementById("ok2").hidden=true;
   }
   document.querySelectorAll(".langbtn").forEach(b=>b.addEventListener("click",()=>applyLang(b.dataset.lang)));
   applyLang(lang);

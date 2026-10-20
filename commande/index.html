@@ -718,6 +718,9 @@ document.addEventListener("change",e=>{
 
 /* ---------- démarrage ---------- */
 seed();
+const qs=new URLSearchParams(location.search);
+if(qs.get("mode")==="collect"||qs.get("mode")==="delivery")S.mode=qs.get("mode");
+if(qs.get("lang")==="fr"||qs.get("lang")==="en")S.lang=qs.get("lang");
 document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===S.lang));
 document.documentElement.lang=S.lang;
 const h0=(location.hash||"").replace("#","");
