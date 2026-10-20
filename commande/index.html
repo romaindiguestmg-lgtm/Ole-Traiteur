@@ -215,6 +215,12 @@ a{color:inherit}
 .legend{display:flex;flex-wrap:wrap;gap:8px 16px;padding:12px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--fg2)}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .mapnote{padding:0 16px 14px;font-size:12px;color:var(--fg2)}
+.mapbox iframe{display:block;width:100%;height:320px;border:0;background:var(--sea)}
+.mchips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px 4px}
+.mchips button{display:inline-flex;align-items:center;gap:8px;font:400 13px var(--body);color:var(--fg);background:transparent;border:1px solid var(--line2);padding:6px 12px 6px 8px;cursor:pointer}
+.mchips button.on{border-color:var(--accent);color:var(--accent)}
+.mchips .pin{width:20px;height:20px;border-radius:50%;background:var(--accent);color:var(--accent-ink);font-size:11px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;flex:none;font-style:normal}
+.maplink{display:inline-block;padding:8px 16px 14px;font-size:13px;color:var(--accent)}
 
 .tbl{width:100%;border-collapse:collapse;font-size:15px}
 .tblw{overflow-x:auto;border:1px solid var(--line);margin-top:14px}
@@ -339,6 +345,9 @@ const QUARTIERS=[
  {n:"Fabron",z:3,x:72,y:172},{n:"Saint-Pancrace",z:3,x:140,y:58},{n:"Mont Boron",z:3,x:338,y:196},{n:"L'Ariane",z:3,x:318,y:70}
 ];
 const SHOP={x:196,y:168};
+const SHOP_Q="Nice 06000, France";
+const gmap=(q,z)=>"https://www.google.com/maps?q="+encodeURIComponent(q)+"&hl=fr&z="+z+"&output=embed";
+const orderQ=o=>o.addr.split(",")[0]+", "+o.q+", Nice, France";
 
 /* ---------- stockage de démo (localStorage, facultatif) ---------- */
 const KEY="ole_commande_demo_v1";
@@ -596,11 +605,11 @@ function renderAdmin(){
     <ul>${o.items.map(([id,q])=>`<li><span>${q} × ${esc(prod(id).n)}</span><span>${eurFR(prod(id).price*q)}</span></li>`).join("")}${o.fee?`<li><span class="muted">Frais de livraison</span><span>${eurFR(o.fee)}</span></li>`:""}</ul>
     ${o.msg?`<p class="msg">« ${esc(o.msg)} »</p>`:""}
     <div class="ft"><b>${eurFR(orderTotal(o))} · payé en ligne</b><div class="acts">
-     ${o.mode==="delivery"?`<a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.addr+", "+o.q+", Nice")}" target="_blank" rel="noopener">Itinéraire</a>`:""}
+     ${o.mode==="delivery"?`<button type="button" class="btn sm" data-mq="${esc(orderQ(o))}" data-mz="16" data-show="1">Sur la carte</button><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.addr+", "+o.q+", Nice")}" target="_blank" rel="noopener">Itinéraire</a>`:""}
      ${nx?`<button type="button" class="btn sm cu" data-adv="${o.no}">${nx[1]}</button>`:""}</div></div>
    </article>`;
   });
-  h+=`</div></div>${mapSVG(delivIdx)}</div>`;
+  h+=`</div></div>${mapGoogle(delivIdx)}</div>`;
  }
  if(S.tab==="carte"){
   h+=`<div class="sec"><h2>Carte &amp; prix</h2><p class="h">Changez un prix ou marquez un plat épuisé : la carte en ligne se met à jour aussitôt. Essayez, puis repassez en vue client.</p>
@@ -618,16 +627,24 @@ function renderAdmin(){
     <td><input type="number" id="zf-${z.id}" data-zf="${z.id}" step="0.5" min="0" value="${z.fee}"></td><td><input type="number" id="zm-${z.id}" data-zm="${z.id}" step="1" min="0" value="${z.min}"></td></tr>`).join("")}
    </tbody></table></div><p class="saved" id="savedMsg"></p>
    <h2 style="margin-top:30px">Horaires de retrait</h2><p class="h">Les créneaux proposés suivent les horaires de la boutique : lundi fermé, mardi au vendredi 9 h 30 – 19 h 30, samedi 9 h – 19 h 30, dimanche 9 h – 13 h. Premier retrait 45 minutes après la commande, paellas la veille.</p>
-   ${mapSVG(deliveryPins(),true)}</div>`;
+   ${mapGoogle([],true)}${mapSVG()}</div>`;
  }
  h+=`</div></div>`;
  $("#gerant").innerHTML=h;
 }
 function deliveryPins(){return sortedOrders().filter(o=>o.mode==="delivery"&&o.status!=="done")}
-function mapSVG(pins,zonesOnly){
- const col={new:"var(--st-new)",prep:"var(--st-prep)",ready:"var(--st-ready)",done:"var(--st-done)"};
- let s=`<aside class="mapbox"${zonesOnly?' style="position:static;margin-top:22px;max-width:640px"':""}><div class="mh"><h2>${zonesOnly?"Plan des zones":"Livraisons du jour"}</h2><span class="muted" style="font-size:13px">${zonesOnly?"Nice":pins.length+" en cours"}</span></div>
- <svg viewBox="0 0 400 290" role="img" aria-label="Plan schématique de Nice avec les zones et les livraisons">
+function mapGoogle(pins,zonesOnly){
+ const enc=encodeURIComponent,sel=pins[0];
+ const src=gmap(sel&&!zonesOnly?orderQ(sel):SHOP_Q,sel&&!zonesOnly?16:13);
+ const chips=zonesOnly?"":`<div class="mchips" id="mchips"><button type="button" data-mq="${esc(SHOP_Q)}" data-mz="14"><i class="pin" style="background:var(--fg)">O</i>Boutique</button>${pins.map((o,i)=>`<button type="button" data-mq="${esc(orderQ(o))}" data-mz="16" class="${i===0?"on":""}"><i class="pin">${i+1}</i>${esc(o.q)}</button>`).join("")}</div>`;
+ const dir=!zonesOnly&&pins.length?"https://www.google.com/maps/dir/?api=1&origin="+enc(SHOP_Q)+"&destination="+enc(orderQ(pins[pins.length-1]))+(pins.length>1?"&waypoints="+pins.slice(0,-1).map(o=>enc(orderQ(o))).join("%7C"):"")+"&travelmode=driving":"";
+ return `<aside class="mapbox"${zonesOnly?' style="position:static;margin-top:22px;max-width:640px"':""}><div class="mh"><h2>${zonesOnly?"Nice et la boutique":"Livraisons du jour"}</h2><span class="muted" style="font-size:13px">${zonesOnly?"Google Maps":pins.length+" en cours"}</span></div>
+ <iframe id="gmapFrame" src="${src}" title="Carte Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+ ${chips}${dir?`<a class="maplink" href="${dir}" target="_blank" rel="noopener">Ouvrir la tournée dans Google Maps →</a>`:""}</aside>`;
+}
+function mapSVG(){
+ let s=`<aside class="mapbox" style="position:static;margin-top:22px;max-width:640px"><div class="mh"><h2>Zones autour de la boutique</h2><span class="muted" style="font-size:13px">Schéma</span></div>
+ <svg viewBox="0 0 400 290" role="img" aria-label="Plan schématique des zones de livraison autour de la boutique">
   <defs><clipPath id="land"><path d="M0 0H400V232C360 214 330 206 300 204C270 202 250 210 228 214C190 222 130 222 80 226C50 228 20 234 0 240Z"/></clipPath></defs>
   <rect width="400" height="290" fill="var(--sea)"/>
   <path d="M0 0H400V232C360 214 330 206 300 204C270 202 250 210 228 214C190 222 130 222 80 226C50 228 20 234 0 240Z" fill="var(--bg)"/>
@@ -644,11 +661,8 @@ function mapSVG(pins,zonesOnly){
   <text x="${SHOP.x+128}" y="${SHOP.y-114}" fill="var(--accent)" font-size="9" font-family="Hanken Grotesk, Arial, sans-serif" letter-spacing="1">Z3</text>
   ${QUARTIERS.map(q=>`<text x="${q.x}" y="${q.y}" fill="var(--fg2)" font-size="9" text-anchor="middle" font-family="Hanken Grotesk, Arial, sans-serif">${esc(q.n)}</text>`).join("")}
   <g><rect x="${SHOP.x-7}" y="${SHOP.y-7}" width="14" height="14" fill="var(--fg)" transform="rotate(45 ${SHOP.x} ${SHOP.y})"/><text x="${SHOP.x+12}" y="${SHOP.y+4}" fill="var(--fg)" font-size="11" font-family="Marcellus, Georgia, serif">Olé</text></g>
-  ${zonesOnly?"":pins.map((o,i)=>{const q=QUARTIERS.find(x=>x.n===o.q)||{x:SHOP.x,y:SHOP.y};const dx=(hash(o.addr)%14)-7,dy=(hash(o.addr+"y")%10)+6;const x=q.x+dx,y=q.y-dy;
-    return `<g><path d="M${x} ${y+12}L${x-7} ${y+2}A9 9 0 1 1 ${x+7} ${y+2}Z" fill="${col[o.status]}" stroke="var(--bg)" stroke-width="1.5"/><text x="${x}" y="${y+1.5}" text-anchor="middle" fill="var(--accent-ink)" font-size="10" font-weight="600" font-family="Hanken Grotesk, Arial, sans-serif">${i+1}</text></g>`}).join("")}
  </svg>
- ${zonesOnly?"":`<div class="legend"><span><i class="dot" style="background:var(--st-new)"></i>Nouvelle</span><span><i class="dot" style="background:var(--st-prep)"></i>En préparation</span><span><i class="dot" style="background:var(--st-ready)"></i>Prête à partir</span><span><i class="dot" style="background:var(--fg)"></i>Boutique</span></div>`}
- <p class="mapnote">${zonesOnly?"Cercles : zones 1, 2 et 3 autour de la boutique.":"Plan schématique pour la démo. Sur le vrai site, carte Google Maps avec les adresses exactes."}</p></aside>`;
+ <p class="mapnote">Cercles : zones 1, 2 et 3 autour de la boutique.</p></aside>`;
  return s;
 }
 
@@ -670,6 +684,7 @@ document.addEventListener("click",e=>{
  const b=e.target.closest("button,a");if(!b)return;
  if(b.dataset.view){setView(b.dataset.view,true);return}
  if(b.dataset.l){setLang(b.dataset.l);return}
+ if(b.dataset.mq!==undefined){const fr=$("#gmapFrame");if(fr){fr.src=gmap(b.dataset.mq,+b.dataset.mz);document.querySelectorAll("#mchips button").forEach(c=>c.classList.toggle("on",c.dataset.mq===b.dataset.mq));if(b.dataset.show)fr.closest(".mapbox").scrollIntoView({behavior:"smooth",block:"center"})}return}
  if(b.dataset.inc){readFields();changeQty(b.dataset.inc,1);return}
  if(b.dataset.dec){readFields();changeQty(b.dataset.dec,-1);return}
  if(b.dataset.mode){readFields();S.mode=b.dataset.mode;S.co.slot=null;renderClient();if(!$("#sheet").hidden)renderSheet();return}
