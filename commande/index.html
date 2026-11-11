@@ -873,7 +873,7 @@ document.documentElement.lang=S.lang;
 const h0=(location.hash||"").replace("#","");
 if(h0.indexOf("suivi-")===0)S.track=h0.slice(6);
 setView(h0==="gerant"?"gerant":(h0==="suivi"||h0.indexOf("suivi-")===0)?"suivi":"client",false);
-window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){S.orders=d.orders;S.seq=d.seq||S.seq;if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin()}}catch(err){}});
+window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const arrived=d.orders.some(o=>!known.has(o.no));S.orders=d.orders;S.seq=d.seq||S.seq;if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(arrived&&actx){actx.resume();beep()}}}catch(err){}});
 })();
 </script>
 
