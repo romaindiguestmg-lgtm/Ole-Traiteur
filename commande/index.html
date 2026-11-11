@@ -324,6 +324,7 @@ body{margin:0}
 <div class="toast" id="toast" hidden></div>
 <div class="phone" id="phone" hidden role="status" aria-live="polite"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
 <script>
 (function(){
 "use strict";
@@ -414,6 +415,14 @@ if(saved){
  }catch(e){}
 }
 function persist(){try{localStorage.setItem(KEY,JSON.stringify({lang:S.lang,products:S.products.map(p=>({id:p.id,price:p.price,avail:p.avail})),zones:S.zones,orders:S.orders,seq:S.seq}))}catch(e){}}
+
+/* ---------- base partagée Supabase : temps réel entre appareils (clés vides = stockage local seulement) ---------- */
+const SB_URL="https://piugiuockoswsxjcxlas.supabase.co",SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBpdWdpdW9ja29zd3N4amN4bGFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5Mjg2NjksImV4cCI6MjEwNjUwNDY2OX0.aS_DCFNZUZXs9C5ONOrDMPchqkdhysma3mOE9FeZ3aY",SB_TABLE="ole_demo"; /* clé "anon" publique : faite pour être dans la page */
+let sb=null;
+try{if(SB_URL&&SB_KEY&&window.supabase)sb=window.supabase.createClient(SB_URL,SB_KEY)}catch(e){sb=null}
+const sbWarn=r=>{if(r&&r.error)console.warn("Supabase :",r.error.message)};
+function cloudSave(o){if(sb)sb.from(SB_TABLE).upsert({id:"o-"+o.code,data:o,updated_at:new Date().toISOString()}).then(sbWarn,()=>{})}
+function cloudSettings(){if(sb)sb.from(SB_TABLE).upsert({id:"settings",data:{products:S.products.map(p=>({id:p.id,price:p.price,avail:p.avail})),zones:S.zones},updated_at:new Date().toISOString()}).then(sbWarn,()=>{})}
 
 /* ---------- utilitaires ---------- */
 const $=s=>document.querySelector(s);
@@ -622,7 +631,7 @@ function pay(){
  setTimeout(()=>{
   S.seq+=1;
   const o={no:S.seq,day:co.day,slot:co.slot,mode:S.mode,q:S.mode==="delivery"?co.q:"",addr:S.mode==="delivery"?co.addr:"",name:co.name,phone:co.phone,items:cartList().map(x=>[x.p.id,x.q]),fee:fee(),status:"new",msg:co.msg,lang:S.lang,fresh:true,paid:true,code:mkCode(),times:{new:Date.now()}};
-  S.orders.push(o);persist();S.track=o.code;mailNewOrder(o,co.email);
+  S.orders.push(o);persist();cloudSave(o);S.track=o.code;mailNewOrder(o,co.email);
   co.last=o;co.paying=false;co.step=4;S.cart={};
   beep();renderSheet();renderClient();
  },1100);
@@ -848,7 +857,7 @@ document.addEventListener("click",e=>{
  if(b.id==="soundBtn"){S.sound=!S.sound;if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;renderAdmin();return}
  if(b.dataset.f){S.filter=b.dataset.f;renderAdmin();return}
- if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();renderAdmin();phoneNotice(o);mailStatus(o)}return}
+ if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);renderAdmin();phoneNotice(o);mailStatus(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
@@ -860,7 +869,7 @@ document.addEventListener("change",e=>{
  if(el.dataset.av){const p=prod(el.dataset.av);if(p){p.avail=el.checked;if(!p.avail)delete S.cart[p.id];msg=p.avail?`« ${p.n} » est de nouveau en ligne`:`« ${p.n} » affiché comme épuisé`}}
  if(el.dataset.zf){const z=S.zones.find(x=>x.id===+el.dataset.zf);const v=parseFloat(el.value);if(z&&v>=0){z.fee=v;msg=`${z.n} : frais ${eurFR(v)}`}}
  if(el.dataset.zm){const z=S.zones.find(x=>x.id===+el.dataset.zm);const v=parseFloat(el.value);if(z&&v>=0){z.min=v;msg=`${z.n} : minimum ${eurFR(v)}`}}
- if(msg){persist();renderClient();const m=$("#savedMsg");if(m)m.textContent="✓ "+msg}
+ if(msg){persist();cloudSettings();renderClient();const m=$("#savedMsg");if(m)m.textContent="✓ "+msg}
 });
 
 /* ---------- démarrage ---------- */
@@ -874,6 +883,44 @@ const h0=(location.hash||"").replace("#","");
 if(h0.indexOf("suivi-")===0)S.track=h0.slice(6);
 setView(h0==="gerant"?"gerant":(h0==="suivi"||h0.indexOf("suivi-")===0)?"suivi":"client",false);
 window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const arrived=d.orders.some(o=>!known.has(o.no));S.orders=d.orders;S.seq=d.seq||S.seq;if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(arrived&&actx){actx.resume();beep()}}}catch(err){}});
+
+/* ---------- synchronisation Supabase ---------- */
+const track0=S.track;
+function applySettings(d){
+ if(!d)return;
+ if(d.products)d.products.forEach(sp=>{const p=S.products.find(x=>x.id===sp.id);if(p){p.price=sp.price;p.avail=sp.avail;if(!p.avail)delete S.cart[p.id]}});
+ if(d.zones)d.zones.forEach(sz=>{const z=S.zones.find(x=>x.id===sz.id);if(z){z.fee=sz.fee;z.min=sz.min}});
+}
+function rerender(){if(S.view==="suivi")renderSuivi();else if(S.view==="gerant")renderAdmin();else{renderClient();if(!$("#sheet").hidden)renderSheet()}}
+function mergeOrders(list,replace){
+ const known=new Set(S.orders.map(o=>o.code));
+ if(replace)S.orders=list.slice();
+ else list.forEach(o=>{const i=S.orders.findIndex(x=>x.code===o.code);if(i<0)S.orders.push(o);else S.orders[i]=o});
+ const arrived=list.some(o=>!known.has(o.code));
+ S.seq=Math.max(S.seq,...S.orders.map(o=>o.no||0));
+ persist();
+ if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();
+ if(arrived&&actx){try{actx.resume()}catch(e){}beep()}
+}
+async function cloudFetch(first){
+ const r=await sb.from(SB_TABLE).select("id,data");
+ if(r.error){sbWarn(r);return}
+ const rows=r.data||[],orders=rows.filter(x=>x.id.indexOf("o-")===0).map(x=>x.data).filter(o=>o&&o.code);
+ const st=rows.find(x=>x.id==="settings");
+ if(st)applySettings(st.data);else if(first)cloudSettings();
+ if(first&&!orders.length){S.orders.forEach(cloudSave);rerender();return}
+ if(first){S.orders=[];mergeOrders(orders,true);if(track0&&S.orders.some(o=>o.code===track0))S.track=track0;rerender();return}
+ mergeOrders(orders,true);
+}
+if(sb){
+ cloudFetch(true).catch(()=>{});
+ sb.channel("ole-demo").on("postgres_changes",{event:"*",schema:"public",table:SB_TABLE},p=>{
+  const row=p.new;if(!row||!row.id)return;
+  if(row.id==="settings"){applySettings(row.data);persist();if(S.view==="client")renderClient();return}
+  if(row.id.indexOf("o-")===0&&row.data&&row.data.code)mergeOrders([row.data],false);
+ }).subscribe();
+ document.addEventListener("visibilitychange",()=>{if(!document.hidden)cloudFetch(false).catch(()=>{})});
+}
 })();
 </script>
 
