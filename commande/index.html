@@ -245,7 +245,49 @@ a{color:inherit}
 footer{border-top:1px solid var(--line);padding-block:20px;font-size:13px;color:var(--fg2)}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
 .toast{position:fixed;z-index:90;left:50%;transform:translateX(-50%);bottom:calc(92px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:12px 18px;font-size:14px;max-width:calc(100% - 32px);box-shadow:0 10px 30px rgba(0,0,0,.4)}
-@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+/* suivi de commande */
+.trk{padding-block:26px 70px}
+.trk .wrap{max-width:640px}
+.trk h1{font-size:clamp(30px,6vw,44px);margin-top:10px}
+.trk .sub{color:var(--fg2);margin-top:8px}
+.live{display:inline-flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--st-ready);margin-top:14px}
+.live i{width:8px;height:8px;border-radius:50%;background:var(--st-ready);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.25}}
+.now{margin-top:22px;border:1px solid var(--line2);background:var(--bg2);padding:20px;display:grid;gap:6px}
+.now .big{font-family:var(--display);font-size:30px;line-height:1.1}
+.now .big em{font-size:1em}
+.now p{color:var(--fg2)}
+.steps{list-style:none;margin:26px 0 0;padding:0;display:grid}
+.steps li{display:grid;grid-template-columns:28px 1fr auto;gap:0 14px;align-items:start;position:relative;padding-bottom:22px}
+.steps li:last-child{padding-bottom:0}
+.steps li::before{content:"";position:absolute;left:13px;top:26px;bottom:0;width:2px;background:var(--line)}
+.steps li:last-child::before{display:none}
+.steps li.ok::before{background:var(--accent)}
+.steps .b{width:28px;height:28px;border-radius:50%;border:2px solid var(--line2);background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--accent-ink);position:relative;z-index:1}
+.steps li.ok .b{background:var(--accent);border-color:var(--accent)}
+.steps li.cur .b{box-shadow:0 0 0 5px rgba(201,138,78,.25)}
+.steps .t b{display:block;font-weight:500;font-size:16px}
+.steps .t span{font-size:14px;color:var(--fg2)}
+.steps li:not(.ok) .t b{color:var(--fg2);font-weight:400}
+.steps .h{font-variant-numeric:tabular-nums;font-size:14px;color:var(--fg2)}
+.mails{margin-top:26px;display:grid;gap:8px}
+.mail{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;border:1px solid var(--line);padding:10px 12px;font-size:14px}
+.mail .ic{font-size:16px}
+.mail .h{font-variant-numeric:tabular-nums;color:var(--fg2);font-size:13px}
+.trk .box{margin-top:26px;border-top:1px solid var(--line);padding-top:16px}
+.trk .pick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.trk .pick button{border:1px solid var(--line2);background:none;padding:8px 12px;cursor:pointer;font-size:13px}
+.trk .pick button.on{border-color:var(--accent);color:var(--accent)}
+.trk .url{margin-top:14px;font-size:13px;color:var(--fg2);word-break:break-all}
+.trk .url code{color:var(--fg);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.phone{position:fixed;z-index:85;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:300px;max-width:calc(100% - 32px);background:var(--fg);color:var(--bg);border-radius:18px;padding:14px 16px;box-shadow:0 18px 50px rgba(0,0,0,.5);display:grid;gap:6px}
+.phone .k{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#6E5F52;display:flex;justify-content:space-between;gap:8px}
+.phone b{font-family:var(--display);font-weight:400;font-size:19px}
+.phone p{font-size:13px;color:#4A3E34}
+.phone .row{display:flex;gap:8px;margin-top:4px}
+.phone button{border:1px solid #B9A994;background:none;color:var(--bg);font:500 12px var(--body);padding:8px 10px;cursor:pointer}
+.phone button.go{background:var(--bg);color:var(--fg);border-color:var(--bg)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.live i{animation:none}}
 [hidden]{display:none!important}
 body{margin:0}
 </style>
@@ -257,6 +299,7 @@ body{margin:0}
   <span class="lbl"><b>Démo Rosma Web</b> · commande en ligne, paiement simulé</span>
   <div class="seg" role="tablist" aria-label="Vue">
     <button type="button" id="v-client" data-view="client">Vue client</button>
+    <button type="button" id="v-suivi" data-view="suivi">Suivi client</button>
     <button type="button" id="v-gerant" data-view="gerant">Espace gérant</button>
   </div>
 </div></div>
@@ -271,6 +314,7 @@ body{margin:0}
 
 <main id="client"></main>
 <main id="gerant" hidden></main>
+<main id="suivi" hidden></main>
 
 <footer class="gut"><div class="wrap"><span>Olé · Traiteur espagnol &amp; méditerranéen · Nice</span><span>Démo réalisée par Rosma Web · contenus d'exemple</span></div></footer>
 
@@ -278,6 +322,7 @@ body{margin:0}
 <div class="scrim" id="scrim" hidden></div>
 <section class="sheet" id="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="shTitle"></section>
 <div class="toast" id="toast" hidden></div>
+<div class="phone" id="phone" hidden role="status" aria-live="polite"></div>
 
 <script>
 (function(){
@@ -301,7 +346,7 @@ fr:{kicker:"Commande en ligne · Nice",h1a:"Commandez,",h1b:"on prépare.",lead:
  recap:"Récapitulatif",doneT:n=>"Merci, commande n° "+n,
  doneCollect:(d,h)=>`Retrait le ${d} à ${h}, à la boutique Olé.`,doneDelivery:(d,h,q)=>`Livraison le ${d}, créneau ${h}, ${q}.`,
  doneMail:"Un e-mail de confirmation vous est envoyé. Le gérant voit la commande instantanément.",
- seeAdmin:"Voir côté gérant",again:"Nouvelle commande",added:n=>n+" ajouté au panier",close:"Fermer"},
+ seeAdmin:"Voir côté gérant",track:"Suivre ma commande",again:"Nouvelle commande",added:n=>n+" ajouté au panier",close:"Fermer"},
 en:{kicker:"Online ordering · Nice",h1a:"You order,",h1b:"we cook.",lead:"Tapas, paellas and sweets cooked every morning. Pick up in store at the time you choose, or get it delivered in Nice.",
  collect:"Click & Collect",collectSub:"Pickup in store",delivery:"Delivery",deliverySub:"In Nice, by area",
  cats:{paellas:"Paellas",chaudes:"Hot tapas",froides:"Cold tapas",postres:"Desserts"},paellaNote:"from 4 portions · order the day before",
@@ -319,7 +364,7 @@ en:{kicker:"Online ordering · Nice",h1a:"You order,",h1b:"we cook.",lead:"Tapas
  recap:"Summary",doneT:n=>"Thank you, order no. "+n,
  doneCollect:(d,h)=>`Pickup on ${d} at ${h}, at the Olé shop.`,doneDelivery:(d,h,q)=>`Delivery on ${d}, ${h} slot, ${q}.`,
  doneMail:"A confirmation email is on its way. The owner sees your order instantly.",
- seeAdmin:"See owner view",again:"New order",added:n=>n+" added to basket",close:"Close"}
+ seeAdmin:"See owner view",track:"Track my order",again:"New order",added:n=>n+" added to basket",close:"Close"}
 };
 
 /* ---------- données ---------- */
@@ -426,8 +471,10 @@ function beep(){if(!S.sound||!actx)return;try{
 }catch(e){}}
 
 /* ---------- commandes d'exemple ---------- */
+function mkCode(){const c="abcdefghjkmnpqrstuvwxyz23456789";let r="";for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
+function fixOrders(){const now=Date.now();S.orders.forEach((o,i)=>{if(!o.code)o.code=mkCode();if(!o.times){o.times={};const order=["new","prep","ready","done"];const k=order.indexOf(o.status);order.slice(0,k+1).forEach((st,j)=>o.times[st]=now-(40-j*9+i)*60000)}})}
 function seed(){
- if(S.orders.length)return;
+ if(S.orders.length){fixOrders();return}
  const today=iso(new Date());
  S.orders=[
   {no:1042,day:today,slot:"11:45",mode:"collect",name:"Camille Martin",phone:"06 12 34 56 78",items:[["croquetas",12],["bravas",2],["churros",1]],fee:0,status:"done",msg:"",lang:"fr"},
@@ -436,6 +483,7 @@ function seed(){
   {no:1045,day:today,slot:"12:30–13:00",mode:"delivery",q:"Port Lympia",addr:"3 quai Papacino",name:"James Wilson",phone:"+44 7700 900123",items:[["gambas",2],["croquetas",8],["bravas",2]],fee:5,status:"new",msg:"Allergic to nuts",lang:"en"},
   {no:1046,day:today,slot:"13:00–13:30",mode:"delivery",q:"Vieux-Nice",addr:"8 rue de la Préfecture",name:"Léa Rossi",phone:"06 98 76 54 32",items:[["albondigas",1],["churros",2]],fee:3,status:"new",msg:"",lang:"fr"}
  ];
+ fixOrders();
 }
 
 /* ---------- rendu client ---------- */
@@ -543,7 +591,7 @@ function renderSheet(){
    <div>${o.items.map(([id,q])=>`<div class="line"><div class="n">${q} × ${esc(prod(id).n)}</div><div class="p">${eur(prod(id).price*q)}</div></div>`).join("")}</div>
    <div class="tot"><span class="big">${L.total}</span><span class="big">${eur(orderTotal(o))}</span></div>
    <p class="muted">${L.doneMail}</p></div>`;
-  foot=`<button type="button" class="btn cu" id="toAdmin">${L.seeAdmin} →</button><button type="button" class="btn" id="again">${L.again}</button>`;
+  foot=`<button type="button" class="btn cu" id="toTrack">${L.track} →</button><button type="button" class="btn" id="toAdmin">${L.seeAdmin}</button>`;
  }
  $("#sheet").innerHTML=`<div class="gut"><div class="dots">${[0,1,2,3].map(i=>`<i class="${i<=Math.min(st,3)?"on":""}"></i>`).join("")}</div></div>
   <div class="sh-h gut">${st>0&&st<4?`<button type="button" class="icon" id="shBack" aria-label="${L.back}">←</button>`:""}<h2 id="shTitle">${titles[st]}</h2><button type="button" class="icon" id="shClose" aria-label="${L.close}">✕</button></div>
@@ -573,8 +621,8 @@ function pay(){
  const co=S.co;co.paying=true;renderSheet();
  setTimeout(()=>{
   S.seq+=1;
-  const o={no:S.seq,day:co.day,slot:co.slot,mode:S.mode,q:S.mode==="delivery"?co.q:"",addr:S.mode==="delivery"?co.addr:"",name:co.name,phone:co.phone,items:cartList().map(x=>[x.p.id,x.q]),fee:fee(),status:"new",msg:co.msg,lang:S.lang,fresh:true,paid:true};
-  S.orders.push(o);persist();
+  const o={no:S.seq,day:co.day,slot:co.slot,mode:S.mode,q:S.mode==="delivery"?co.q:"",addr:S.mode==="delivery"?co.addr:"",name:co.name,phone:co.phone,items:cartList().map(x=>[x.p.id,x.q]),fee:fee(),status:"new",msg:co.msg,lang:S.lang,fresh:true,paid:true,code:mkCode(),times:{new:Date.now()}};
+  S.orders.push(o);persist();S.track=o.code;
   co.last=o;co.paying=false;co.step=4;S.cart={};
   beep();renderSheet();renderClient();
  },1100);
@@ -583,6 +631,59 @@ function pay(){
 /* ---------- rendu gérant ---------- */
 const STATUS={new:"Nouvelle",prep:"En préparation",ready:"Prête",done:"Remise"};
 const NEXT={new:["prep","Accepter"],prep:["ready","Marquer prête"],ready:["done","Marquer remise"]};
+function stAdmin(o){return o.mode==="delivery"?{new:"Nouvelle",prep:"En préparation",ready:"En livraison",done:"Livrée"}[o.status]:STATUS[o.status]}
+function nextLbl(o){if(o.mode==="delivery")return{new:"Accepter",prep:"Partie en livraison",ready:"Marquer livrée"}[o.status];return NEXT[o.status]&&NEXT[o.status][1]}
+const TK={
+ fr:{kicker:"Suivi de commande",title:n=>"Commande n° "+n,live:"Mis à jour en direct",
+  steps:{collect:[["new","Commande reçue","Paiement confirmé"],["prep","En préparation","Nos cuisiniers s'en occupent"],["ready","Prête à retirer","Elle vous attend en boutique"],["done","Retirée","Bon appétit !"]],
+         delivery:[["new","Commande reçue","Paiement confirmé"],["prep","En préparation","Nos cuisiniers s'en occupent"],["ready","En livraison","Le livreur est en route"],["done","Livrée","Bon appétit !"]]},
+  now:{collect:{new:["On a bien reçu","votre commande.","Olé va la confirmer dans quelques minutes."],prep:["Votre commande","est en préparation.",""],ready:["Votre commande","est prête !","Vous pouvez passer la chercher à la boutique Olé."],done:["Commande","retirée.","Merci et bon appétit !"]},
+       delivery:{new:["On a bien reçu","votre commande.","Olé va la confirmer dans quelques minutes."],prep:["Votre commande","est en préparation.",""],ready:["Votre commande","est en route !","Le livreur arrive à l'adresse indiquée."],done:["Commande","livrée.","Merci et bon appétit !"]}},
+  planned:{collect:(d,h)=>`Retrait prévu ${d} à ${h}`,delivery:(d,h)=>`Livraison prévue ${d}, créneau ${h}`},
+  mails:"Notifications envoyées",mailOf:{new:"E-mail · Commande confirmée",prep:"E-mail · Commande en préparation",ready:{collect:"E-mail · Votre commande est prête",delivery:"E-mail · Votre commande est en route"},done:"E-mail · Merci pour votre commande"},
+  detail:"Votre commande",total:"Total payé",demoPick:"Démo · choisir une commande à suivre",urlLbl:"Lien de suivi envoyé au client :",today:"aujourd'hui",tryIt:"Passez dans l'espace gérant, faites avancer cette commande : cette page se met à jour toute seule."},
+ en:{kicker:"Order tracking",title:n=>"Order no. "+n,live:"Live updates",
+  steps:{collect:[["new","Order received","Payment confirmed"],["prep","Being prepared","Our cooks are on it"],["ready","Ready for pickup","Waiting for you in store"],["done","Picked up","Enjoy your meal!"]],
+         delivery:[["new","Order received","Payment confirmed"],["prep","Being prepared","Our cooks are on it"],["ready","Out for delivery","The driver is on the way"],["done","Delivered","Enjoy your meal!"]]},
+  now:{collect:{new:["We've received","your order.","Olé will confirm it in a few minutes."],prep:["Your order","is being prepared.",""],ready:["Your order","is ready!","Come and pick it up at the Olé shop."],done:["Order","picked up.","Thank you, enjoy!"]},
+       delivery:{new:["We've received","your order.","Olé will confirm it in a few minutes."],prep:["Your order","is being prepared.",""],ready:["Your order","is on its way!","The driver is heading to your address."],done:["Order","delivered.","Thank you, enjoy!"]}},
+  planned:{collect:(d,h)=>`Pickup planned ${d} at ${h}`,delivery:(d,h)=>`Delivery planned ${d}, ${h} slot`},
+  mails:"Notifications sent",mailOf:{new:"Email · Order confirmed",prep:"Email · Order being prepared",ready:{collect:"Email · Your order is ready",delivery:"Email · Your order is on its way"},done:"Email · Thank you for your order"},
+  detail:"Your order",total:"Total paid",demoPick:"Demo · choose an order to track",urlLbl:"Tracking link sent to the customer:",today:"today",tryIt:"Go to the owner view and move this order forward: this page updates by itself."}
+};
+const hhmm=ts=>{const d=new Date(ts);return pad(d.getHours())+":"+pad(d.getMinutes())};
+function renderSuivi(){
+ const k=TK[S.lang];
+ let o=S.orders.find(x=>x.code===S.track);
+ if(!o){o=[...S.orders].sort((a,b)=>b.no-a.no)[0];if(o)S.track=o.code}
+ if(!o){$("#suivi").innerHTML="";return}
+ const m=o.mode==="delivery"?"delivery":"collect";
+ const order=["new","prep","ready","done"],ci=order.indexOf(o.status);
+ const n=k.now[m][o.status];
+ const dLbl=o.day===iso(new Date())?k.today:new Date(o.day+"T12:00").toLocaleDateString(loc(),{weekday:"long",day:"numeric",month:"long"});
+ const mails=order.slice(0,ci+1).filter(st=>o.times&&o.times[st]).map(st=>{const t=k.mailOf[st];return{t:typeof t==="string"?t:t[m],h:hhmm(o.times[st])}}).reverse();
+ const pickList=[...S.orders].sort((a,b)=>b.no-a.no).slice(0,6);
+ $("#suivi").innerHTML=`<section class="trk gut"><div class="wrap">
+  <p class="over">${k.kicker}</p><h1>${k.title(o.no)}</h1>
+  <p class="sub">${k.planned[m](dLbl,o.slot)}${m==="delivery"?" · "+esc(o.q):""}</p>
+  <span class="live"><i></i>${k.live}</span>
+  <div class="now"><div class="big">${n[0]} <em>${n[1]}</em></div>${n[2]?`<p>${n[2]}</p>`:""}</div>
+  <ol class="steps">${k.steps[m].map(([st,t,d],i)=>`<li class="${i<=ci?"ok":""}${i===ci?" cur":""}"><span class="b">${i<ci||(i===ci&&st==="done")?"✓":""}</span><div class="t"><b>${t}</b><span>${d}</span></div><span class="h">${o.times&&o.times[st]?hhmm(o.times[st]):""}</span></li>`).join("")}</ol>
+  <div class="mails"><span class="lbl">${k.mails}</span>${mails.map(x=>`<div class="mail"><span class="ic" aria-hidden="true">✉</span><span>${x.t}</span><span class="h">${x.h}</span></div>`).join("")}</div>
+  <div class="box"><span class="lbl">${k.detail}</span>${o.items.map(([id,q])=>`<div class="line"><div class="n">${q} × ${esc(prod(id).n)}</div><div class="p">${eur(prod(id).price*q)}</div></div>`).join("")}${o.fee?`<div class="line"><div class="n muted">${T[S.lang].fee}</div><div class="p">${eur(o.fee)}</div></div>`:""}
+   <div class="tot" style="margin-top:12px"><span class="big">${k.total}</span><span class="big">${eur(orderTotal(o))}</span></div></div>
+  <div class="box"><span class="lbl">${k.demoPick}</span><p class="muted" style="font-size:14px">${k.tryIt}</p>
+   <div class="pick">${pickList.map(x=>`<button type="button" data-track="${x.code}" class="${x.code===o.code?"on":""}">n° ${x.no} · ${esc(x.name.split(" ")[0])}</button>`).join("")}</div>
+   <p class="url">${k.urlLbl} <code>ole-nice.fr/suivi/${o.code}</code></p></div>
+ </div></section>`;
+}
+let phoneT;
+function phoneNotice(o){
+ const k=TK.fr,m=o.mode==="delivery"?"delivery":"collect",t=k.mailOf[o.status];
+ const el=$("#phone");
+ el.innerHTML=`<div class="k"><span>Côté client · n° ${o.no}</span><span>${hhmm(Date.now())}</span></div><b>${k.steps[m].find(x=>x[0]===o.status)[1]}</b><p>${esc(o.name.split(" ")[0])} voit le nouveau statut en direct. ${typeof t==="string"?t:t[m]} envoyé.</p><div class="row"><button type="button" class="go" data-track="${o.code}" data-goview="suivi">Voir son suivi</button><button type="button" id="phoneClose">OK</button></div>`;
+ el.hidden=false;clearTimeout(phoneT);phoneT=setTimeout(()=>el.hidden=true,7000);
+}
 function sortedOrders(){return [...S.orders].sort((a,b)=>(a.day+a.slot).localeCompare(b.day+b.slot))}
 function renderAdmin(){
  const all=sortedOrders();
@@ -614,14 +715,14 @@ function renderAdmin(){
    const dl=o.day===today?"Aujourd'hui":new Date(o.day+"T12:00").toLocaleDateString("fr-FR",{weekday:"short",day:"numeric",month:"short"});
    const nx=NEXT[o.status];
    h+=`<article class="ord${o.fresh?" fresh":""}">
-    <div class="hd"><span class="no">n° ${o.no}</span><span class="when">${dl} · ${o.slot}</span><span class="pill ${o.status}">${STATUS[o.status]}</span></div>
+    <div class="hd"><span class="no">n° ${o.no}</span><span class="when">${dl} · ${o.slot}</span><span class="pill ${o.status}">${stAdmin(o)}</span></div>
     <p class="who">${esc(o.name)} <span>· ${esc(o.phone)}${o.lang==="en"?" · 🇬🇧 EN":""}</span></p>
     ${o.mode==="collect"?`<span class="mchip">Click &amp; Collect · retrait ${o.slot}</span>`:`<span class="mchip">${pin>=0?`<i class="pin">${pin+1}</i>`:""}Livraison · ${esc(o.q)} · ${esc(o.addr)}</span>`}
     <ul>${o.items.map(([id,q])=>`<li><span>${q} × ${esc(prod(id).n)}</span><span>${eurFR(prod(id).price*q)}</span></li>`).join("")}${o.fee?`<li><span class="muted">Frais de livraison</span><span>${eurFR(o.fee)}</span></li>`:""}</ul>
     ${o.msg?`<p class="msg">« ${esc(o.msg)} »</p>`:""}
     <div class="ft"><b>${eurFR(orderTotal(o))} · payé en ligne</b><div class="acts">
      ${o.mode==="delivery"?`<button type="button" class="btn sm" data-mq="${esc(orderQ(o))}" data-mz="16" data-show="1">Sur la carte</button><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.addr+", "+o.q+", Nice")}" target="_blank" rel="noopener">Itinéraire</a>`:""}
-     ${nx?`<button type="button" class="btn sm cu" data-adv="${o.no}">${nx[1]}</button>`:""}</div></div>
+     ${nx?`<button type="button" class="btn sm cu" data-adv="${o.no}">${nextLbl(o)}</button>`:""}<a class="btn sm" href="#suivi-${o.code}" data-track="${o.code}" data-goview="suivi">Suivi</a></div></div>
    </article>`;
   });
   h+=`</div></div>${mapGoogle(delivIdx)}</div>`;
@@ -684,19 +785,22 @@ function mapSVG(){
 /* ---------- vues et langue ---------- */
 function setView(v,push){
  S.view=v;
- $("#client").hidden=v!=="client";$("#gerant").hidden=v!=="gerant";
- $("#langs").hidden=v!=="client";$("#admtag").hidden=v!=="gerant";
+ $("#client").hidden=v!=="client";$("#gerant").hidden=v!=="gerant";$("#suivi").hidden=v!=="suivi";
+ $("#langs").hidden=v==="gerant";$("#admtag").hidden=v!=="gerant";
+ if(v!=="gerant")$("#phone").hidden=true;
  document.querySelectorAll(".seg button").forEach(b=>b.classList.toggle("on",b.dataset.view===v));
- if(v==="gerant"){renderAdmin()}else{renderClient()}
+ if(v==="gerant"){renderAdmin()}else if(v==="suivi"){renderSuivi()}else{renderClient()}
  renderCartBar();
- if(push){try{history.replaceState(null,"","#"+v)}catch(e){}}
+ if(push){try{history.replaceState(null,"","#"+(v==="suivi"&&S.track?"suivi-"+S.track:v))}catch(e){}}
  window.scrollTo(0,0);
 }
-function setLang(l){S.lang=l;document.documentElement.lang=l;document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===l));persist();renderClient();if(!$("#sheet").hidden)renderSheet()}
+function setLang(l){S.lang=l;document.documentElement.lang=l;document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===l));persist();renderClient();if(S.view==="suivi")renderSuivi();if(!$("#sheet").hidden)renderSheet()}
 
 /* ---------- événements ---------- */
 document.addEventListener("click",e=>{
  const b=e.target.closest("button,a");if(!b)return;
+ if(b.dataset.track){e.preventDefault();S.track=b.dataset.track;$("#phone").hidden=true;if(S.view==="suivi"&&!b.dataset.goview){renderSuivi();try{history.replaceState(null,"","#suivi-"+S.track)}catch(err){}}else setView("suivi",true);return}
+ if(b.id==="phoneClose"){$("#phone").hidden=true;return}
  if(b.dataset.view){setView(b.dataset.view,true);return}
  if(b.dataset.l){setLang(b.dataset.l);return}
  if(b.dataset.mq!==undefined){const fr=$("#gmapFrame");if(fr){fr.src=gmap(b.dataset.mq,+b.dataset.mz);document.querySelectorAll("#mchips button").forEach(c=>c.classList.toggle("on",c.dataset.mq===b.dataset.mq));if(b.dataset.show)fr.closest(".mapbox").scrollIntoView({behavior:"smooth",block:"center"})}return}
@@ -713,10 +817,11 @@ document.addEventListener("click",e=>{
  if(b.id==="payBtn"){pay();return}
  if(b.id==="toAdmin"){closeSheet();S.tab="orders";S.filter="active";setView("gerant",true);return}
  if(b.id==="again"){closeSheet();return}
+ if(b.id==="toTrack"){closeSheet();setView("suivi",true);return}
  if(b.id==="soundBtn"){S.sound=!S.sound;if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;renderAdmin();return}
  if(b.dataset.f){S.filter=b.dataset.f;renderAdmin();return}
- if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;persist();renderAdmin()}return}
+ if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();renderAdmin();phoneNotice(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
@@ -739,7 +844,9 @@ if(qs.get("lang")==="fr"||qs.get("lang")==="en")S.lang=qs.get("lang");
 document.querySelectorAll("#langs button").forEach(b=>b.classList.toggle("on",b.dataset.l===S.lang));
 document.documentElement.lang=S.lang;
 const h0=(location.hash||"").replace("#","");
-setView(h0==="gerant"?"gerant":"client",false);
+if(h0.indexOf("suivi-")===0)S.track=h0.slice(6);
+setView(h0==="gerant"?"gerant":(h0==="suivi"||h0.indexOf("suivi-")===0)?"suivi":"client",false);
+window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){S.orders=d.orders;S.seq=d.seq||S.seq;if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin()}}catch(err){}});
 })();
 </script>
 
