@@ -474,10 +474,24 @@ function chime(t0){
   });
  });
 }
-function beep(){if(!S.sound||!actx)return;try{
+function beep(at){if(!S.sound||!actx)return;try{
  if(!bus){const comp=actx.createDynamicsCompressor(),out=actx.createGain();comp.threshold.value=-18;comp.ratio.value=6;out.gain.value=1.4;comp.connect(out).connect(actx.destination);bus=comp}
- const now=actx.currentTime+0.02;[0,1.1,2.2].forEach(d=>chime(now+d));
+ const now=at||actx.currentTime+0.02;[0,1.1,2.2].forEach(d=>chime(now+d));
 }catch(e){}}
+/* sonnerie : se répète pendant 30 s tant que la nouvelle commande n'est pas acceptée.
+   Tout est programmé d'avance sur l'horloge audio (pas ralentie quand la fenêtre est en arrière-plan). */
+let ringUntil=0;const ringCodes=new Set();
+function stopRing(){ringCodes.clear();ringUntil=0;if(bus){try{bus.disconnect()}catch(e){}bus=null}}
+function ringCheck(){if(!ringCodes.size)return;ringCodes.forEach(c=>{const o=S.orders.find(x=>x.code===c);if(!o||o.status!=="new")ringCodes.delete(c)});if(!ringCodes.size)stopRing()}
+function ring(codes){
+ if(!S.sound||!actx)return;
+ codes.forEach(c=>ringCodes.add(c));
+ try{actx.resume()}catch(e){}
+ const now=actx.currentTime+0.02,end=now+30;
+ let t=Math.max(now,ringUntil);
+ while(t+3.2<=end){beep(t);t+=3.4}
+ ringUntil=t;
+}
 
 /* ---------- commandes d'exemple ---------- */
 function mkCode(){const c="abcdefghjkmnpqrstuvwxyz23456789";let r="";for(let i=0;i<8;i++)r+=c[Math.floor(Math.random()*c.length)];return r}
@@ -633,7 +647,7 @@ function pay(){
   const o={no:S.seq,day:co.day,slot:co.slot,mode:S.mode,q:S.mode==="delivery"?co.q:"",addr:S.mode==="delivery"?co.addr:"",name:co.name,phone:co.phone,items:cartList().map(x=>[x.p.id,x.q]),fee:fee(),status:"new",msg:co.msg,lang:S.lang,fresh:true,paid:true,code:mkCode(),times:{new:Date.now()}};
   S.orders.push(o);persist();cloudSave(o);S.track=o.code;mailNewOrder(o,co.email);
   co.last=o;co.paying=false;co.step=4;S.cart={};
-  beep();renderSheet();renderClient();
+  ring([o.code]);renderSheet();renderClient();
  },1100);
 }
 
@@ -854,10 +868,10 @@ document.addEventListener("click",e=>{
  if(b.id==="toAdmin"){closeSheet();S.tab="orders";S.filter="active";setView("gerant",true);return}
  if(b.id==="again"){closeSheet();return}
  if(b.id==="toTrack"){closeSheet();setView("suivi",true);return}
- if(b.id==="soundBtn"){S.sound=!S.sound;if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
+ if(b.id==="soundBtn"){S.sound=!S.sound;if(!S.sound)stopRing();if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;renderAdmin();return}
  if(b.dataset.f){S.filter=b.dataset.f;renderAdmin();return}
- if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);renderAdmin();phoneNotice(o);mailStatus(o)}return}
+ if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);ringCheck();renderAdmin();phoneNotice(o);mailStatus(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
@@ -882,7 +896,7 @@ document.documentElement.lang=S.lang;
 const h0=(location.hash||"").replace("#","");
 if(h0.indexOf("suivi-")===0)S.track=h0.slice(6);
 setView(h0==="gerant"?"gerant":(h0==="suivi"||h0.indexOf("suivi-")===0)?"suivi":"client",false);
-window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const arrived=d.orders.some(o=>!known.has(o.no));S.orders=d.orders;S.seq=d.seq||S.seq;if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(arrived&&actx){actx.resume();beep()}}}catch(err){}});
+window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const fresh=d.orders.filter(o=>!known.has(o.no)&&o.status==="new").map(o=>o.code);S.orders=d.orders;S.seq=d.seq||S.seq;ringCheck();if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(fresh.length)ring(fresh)}}catch(err){}});
 
 /* ---------- synchronisation Supabase ---------- */
 const track0=S.track;
@@ -896,11 +910,11 @@ function mergeOrders(list,replace){
  const known=new Set(S.orders.map(o=>o.code));
  if(replace)S.orders=list.slice();
  else list.forEach(o=>{const i=S.orders.findIndex(x=>x.code===o.code);if(i<0)S.orders.push(o);else S.orders[i]=o});
- const arrived=list.some(o=>!known.has(o.code));
+ const fresh=list.filter(o=>!known.has(o.code)&&o.status==="new").map(o=>o.code);
  S.seq=Math.max(S.seq,...S.orders.map(o=>o.no||0));
  persist();
  if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();
- if(arrived&&actx){try{actx.resume()}catch(e){}beep()}
+ ringCheck();if(fresh.length)ring(fresh);
 }
 async function cloudFetch(first){
  const r=await sb.from(SB_TABLE).select("id,data");
