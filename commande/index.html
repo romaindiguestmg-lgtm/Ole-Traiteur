@@ -622,7 +622,7 @@ function pay(){
  setTimeout(()=>{
   S.seq+=1;
   const o={no:S.seq,day:co.day,slot:co.slot,mode:S.mode,q:S.mode==="delivery"?co.q:"",addr:S.mode==="delivery"?co.addr:"",name:co.name,phone:co.phone,items:cartList().map(x=>[x.p.id,x.q]),fee:fee(),status:"new",msg:co.msg,lang:S.lang,fresh:true,paid:true,code:mkCode(),times:{new:Date.now()}};
-  S.orders.push(o);persist();S.track=o.code;
+  S.orders.push(o);persist();S.track=o.code;mailNewOrder(o,co.email);
   co.last=o;co.paying=false;co.step=4;S.cart={};
   beep();renderSheet();renderClient();
  },1100);
@@ -631,6 +631,33 @@ function pay(){
 /* ---------- rendu gérant ---------- */
 const STATUS={new:"Nouvelle",prep:"En préparation",ready:"Prête",done:"Remise"};
 const NEXT={new:["prep","Accepter"],prep:["ready","Marquer prête"],ready:["done","Marquer remise"]};
+
+/* ---------- e-mails réels via Web3Forms (clé vide = aucun envoi) ---------- */
+const W3F_KEY="";
+function sendMail(subject,message,extra){
+ if(!W3F_KEY)return;
+ fetch("https://api.web3forms.com/submit",{method:"POST",headers:{"Content-Type":"application/json",Accept:"application/json"},
+  body:JSON.stringify({access_key:W3F_KEY,subject,from_name:"Olé · démo commande",message,...extra})}).catch(()=>{});
+}
+function orderText(o){
+ const d=o.mode==="delivery",L=[];
+ L.push(`Commande n° ${o.no} · ${d?"Livraison":"Click & Collect"}`);
+ L.push(`${d?"Livraison":"Retrait"} : ${new Date(o.day+"T12:00").toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})} · ${o.slot}`);
+ if(d)L.push(`Adresse : ${o.addr}, ${o.q}, Nice`);
+ L.push(`Client : ${o.name} · ${o.phone}`);
+ if(o.msg)L.push(`Message : ${o.msg}`);
+ L.push("");
+ o.items.forEach(([id,q])=>L.push(`${q} × ${prod(id).n} : ${eurFR(prod(id).price*q)}`));
+ if(o.fee)L.push(`Frais de livraison : ${eurFR(o.fee)}`);
+ L.push(`Total payé : ${eurFR(orderTotal(o))}`,"",`Suivi : ${location.origin+location.pathname}#suivi-${o.code}`);
+ return L.join("\n");
+}
+function mailNewOrder(o,email){sendMail(`Nouvelle commande n° ${o.no} · ${o.name}`,orderText(o),email?{email,replyto:email}:{})}
+function mailStatus(o){
+ const m=o.mode==="delivery"?"delivery":"collect",t=TK.fr.mailOf[o.status],n=TK.fr.now[m][o.status];
+ const subj=(typeof t==="string"?t:t[m]).replace(/^E-mail · /,"");
+ sendMail(`[Copie e-mail client] ${subj} · n° ${o.no}`,`Bonjour ${o.name.split(" ")[0]},\n\n${n[0]} ${n[1]} ${n[2]}\n\n${orderText(o)}\n\n(Copie de l'e-mail que reçoit le client sur le vrai site.)`);
+}
 function stAdmin(o){return o.mode==="delivery"?{new:"Nouvelle",prep:"En préparation",ready:"En livraison",done:"Livrée"}[o.status]:STATUS[o.status]}
 function nextLbl(o){if(o.mode==="delivery")return{new:"Accepter",prep:"Partie en livraison",ready:"Marquer livrée"}[o.status];return NEXT[o.status]&&NEXT[o.status][1]}
 const TK={
@@ -821,7 +848,7 @@ document.addEventListener("click",e=>{
  if(b.id==="soundBtn"){S.sound=!S.sound;if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;renderAdmin();return}
  if(b.dataset.f){S.filter=b.dataset.f;renderAdmin();return}
- if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();renderAdmin();phoneNotice(o)}return}
+ if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();renderAdmin();phoneNotice(o);mailStatus(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
