@@ -287,6 +287,33 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-betw
 .phone .row{display:flex;gap:8px;margin-top:4px}
 .phone button{border:1px solid #B9A994;background:none;color:var(--bg);font:500 12px var(--body);padding:8px 10px;cursor:pointer}
 .phone button.go{background:var(--bg);color:var(--fg);border-color:var(--bg)}
+.sound.warn{border-color:var(--st-new);color:var(--st-new)}
+.adm-btns{display:flex;flex-wrap:wrap;gap:8px}
+.zt{position:fixed;inset:0;z-index:90;background:rgba(10,8,6,.72);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px}
+.zt-in{display:grid;gap:14px;width:100%;max-width:360px}
+.zt-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.zt-h h2{font-size:24px}
+.zt-x{border:0;background:none;color:var(--fg);font-size:26px;line-height:1;cursor:pointer;padding:4px 8px}
+.zt-warn{font-size:13px;color:var(--st-new);border-left:2px solid var(--st-new);padding:6px 10px}
+.zt-acts{display:grid;gap:8px}
+.zt-acts p{font-size:12px;color:var(--fg2)}
+.ticket{background:#fff;color:#000;font:13px/1.45 "Courier New",Courier,monospace;padding:18px 16px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
+.ticket .c{text-align:center}
+.ticket .big{font-size:26px;font-weight:700;letter-spacing:.12em}
+.ticket .r{display:flex;justify-content:space-between;gap:10px}
+.ticket .r span:last-child{white-space:nowrap;text-align:right}
+.ticket .t{font-weight:700;font-size:15px}
+.ticket .sm{font-size:11px}
+.ticket hr{border:0;border-top:1px dashed #000;margin:8px 0}
+@media print{
+ @page{margin:0}
+ body.printing{background:#fff!important}
+ body.printing::before,body.printing>*:not(#zt){display:none!important}
+ body.printing #zt{position:static;background:none;padding:0;display:block;overflow:visible}
+ body.printing .zt-h,body.printing .zt-acts,body.printing .zt-warn{display:none!important}
+ body.printing .zt-in{max-width:none}
+ body.printing .ticket{box-shadow:none;width:72mm;padding:2mm 3mm;font-size:12px}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.live i{animation:none}}
 [hidden]{display:none!important}
 body{margin:0}
@@ -323,6 +350,7 @@ body{margin:0}
 <section class="sheet" id="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="shTitle"></section>
 <div class="toast" id="toast" hidden></div>
 <div class="phone" id="phone" hidden role="status" aria-live="polite"></div>
+<div class="zt" id="zt" hidden role="dialog" aria-modal="true" aria-label="Décompte de la journée"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
 <script>
@@ -478,6 +506,22 @@ function beep(at){if(!S.sound||!actx)return;try{
  if(!bus){const comp=actx.createDynamicsCompressor(),out=actx.createGain();comp.threshold.value=-18;comp.ratio.value=6;out.gain.value=1.4;comp.connect(out).connect(actx.destination);bus=comp}
  const now=at||actx.currentTime+0.02;[0,1.1,2.2].forEach(d=>chime(now+d));
 }catch(e){}}
+/* préférence mémorisée + déblocage du son au premier clic (Safari / app du Dock coupe le son tant qu'on n'a pas cliqué) */
+const SOUND_KEY="ole_sound";
+try{S.sound=localStorage.getItem(SOUND_KEY)==="1"}catch(e){}
+function audioOk(){return !!actx&&actx.state==="running"}
+function unlockAudio(){if(!S.sound)return;try{if(!actx){actx=new (window.AudioContext||window.webkitAudioContext)();actx.onstatechange=updSoundBtn}if(actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})}catch(e){}}
+function soundBtnHTML(){const w=S.sound&&!audioOk();return `<button type="button" class="sound${S.sound?(w?" warn":" on"):""}" id="soundBtn"><span aria-hidden="true">${S.sound?(w?"🔇":"🔔"):"🔕"}</span>${S.sound?(w?"Son en pause · cliquez pour réactiver":"Alerte sonore activée"):"Activer l'alerte sonore"}</button>`}
+function updSoundBtn(){const b=document.getElementById("soundBtn");if(b)b.outerHTML=soundBtnHTML()}
+["pointerdown","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&actx&&actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})});
+window.addEventListener("focus",()=>{if(actx&&actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})});
+function notifyNew(codes){
+ if(!S.sound||!("Notification" in window)||Notification.permission!=="granted")return;
+ codes.forEach(c=>{const o=S.orders.find(x=>x.code===c);if(!o)return;
+  try{const n=new Notification(`Nouvelle commande n° ${o.no} · Olé`,{body:`${o.name} · ${o.mode==="delivery"?"Livraison":"Click & Collect"} ${o.slot} · ${eurFR(orderTotal(o))}`,tag:"ole-"+o.code,requireInteraction:true});n.onclick=()=>{window.focus();n.close()}}catch(e){}});
+}
+function alertNew(codes){notifyNew(codes);ring(codes)}
 /* sonnerie : se répète pendant 30 s tant que la nouvelle commande n'est pas acceptée.
    Tout est programmé d'avance sur l'horloge audio (pas ralentie quand la fenêtre est en arrière-plan). */
 let ringUntil=0;const ringCodes=new Set();
@@ -742,7 +786,7 @@ function renderAdmin(){
  const ca=all.filter(o=>o.day===today).reduce((a,o)=>a+orderTotal(o),0);
  let h=`<div class="adm gut"><div class="wrap">
   <div class="adm-h"><div><p class="over">Olé · gestion</p><h1>${new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</h1></div>
-  <button type="button" class="sound${S.sound?" on":""}" id="soundBtn"><span aria-hidden="true">${S.sound?"🔔":"🔕"}</span>${S.sound?"Alerte sonore activée":"Activer l'alerte sonore"}</button></div>
+  <div class="adm-btns">${soundBtnHTML()}<button type="button" class="sound" id="ztBtn"><span aria-hidden="true">🧾</span>Encaisser la journée</button></div></div>
   <div class="tabs" role="tablist">
    <button type="button" id="t-orders" data-tab="orders" class="${S.tab==="orders"?"on":""}">Commandes${nNew?`<span class="cnt">${nNew}</span>`:""}</button>
    <button type="button" id="t-carte" data-tab="carte" class="${S.tab==="carte"?"on":""}">Carte &amp; prix</button>
@@ -771,7 +815,7 @@ function renderAdmin(){
     <ul>${o.items.map(([id,q])=>`<li><span>${q} × ${esc(prod(id).n)}</span><span>${eurFR(prod(id).price*q)}</span></li>`).join("")}${o.fee?`<li><span class="muted">Frais de livraison</span><span>${eurFR(o.fee)}</span></li>`:""}</ul>
     ${o.msg?`<p class="msg">« ${esc(o.msg)} »</p>`:""}
     <div class="ft"><b>${eurFR(orderTotal(o))} · payé en ligne</b><div class="acts">
-     ${o.mode==="delivery"?`<button type="button" class="btn sm" data-mq="${esc(orderQ(o))}" data-mz="16" data-show="1">Sur la carte</button><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.addr+", "+o.q+", Nice")}" target="_blank" rel="noopener">Itinéraire</a>`:""}
+     ${o.mode==="delivery"?`<button type="button" class="btn sm" data-mq="${esc(orderQ(o))}" data-mz="16" data-show="1">Sur la carte</button><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(o.addr+", "+o.q+", Nice")}" target="_blank" rel="noopener">Google Maps</a><a class="btn sm" href="https://waze.com/ul?q=${encodeURIComponent(o.addr+", "+o.q+", Nice")}&navigate=yes" target="_blank" rel="noopener">Waze</a>`:""}
      ${nx?`<button type="button" class="btn sm cu" data-adv="${o.no}">${nextLbl(o)}</button>`:""}<a class="btn sm" href="#suivi-${o.code}" data-track="${o.code}" data-goview="suivi">Suivi</a></div></div>
    </article>`;
   });
@@ -798,6 +842,34 @@ function renderAdmin(){
  h+=`</div></div>`;
  $("#gerant").innerHTML=h;
 }
+/* ---------- encaisser la journée : décompte au format ticket de caisse (80 mm) ---------- */
+function zTicket(){
+ const now=new Date(),today=iso(now),list=S.orders.filter(o=>o.day===today).sort((a,b)=>a.no-b.no);
+ const sum=a=>a.reduce((x,o)=>x+orderTotal(o),0),R=(l,r,c)=>`<div class="r${c?" "+c:""}"><span>${l}</span><span>${r}</span></div>`;
+ const cc=list.filter(o=>o.mode==="collect"),dv=list.filter(o=>o.mode==="delivery"),open=list.filter(o=>o.status!=="done");
+ const fees=list.reduce((x,o)=>x+(o.fee||0),0),total=sum(list),items={};
+ list.forEach(o=>o.items.forEach(([id,q])=>{items[id]=(items[id]||0)+q}));
+ let t=`<div class="c big">OLÉ</div><div class="c sm">Traiteur espagnol &amp; méditerranéen · Nice</div><hr>
+ <div class="c t">DÉCOMPTE DE LA JOURNÉE</div><div class="c">${now.toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div><div class="c sm">Édité à ${hhmm(now)}</div><hr>
+ ${R("Commandes",list.length)}${R(`Click &amp; Collect (${cc.length})`,eurFR(sum(cc)))}${R(`Livraison (${dv.length})`,eurFR(sum(dv)))}<hr>
+ ${R("Ventes plats",eurFR(total-fees))}${R("Frais de livraison",eurFR(fees))}${R("TOTAL ENCAISSÉ TTC",eurFR(total),"t")}<hr>
+ ${R("Carte bancaire (en ligne)",eurFR(total))}${R("Espèces",eurFR(0))}<hr>
+ ${R("Commandes remises",list.length-open.length)}${R("Encore en cours",open.length+(open.length?" · "+eurFR(sum(open)):""))}<hr>
+ <div class="t">PLATS VENDUS</div>${Object.keys(items).sort((a,b)=>items[b]-items[a]).map(id=>R(`${items[id]} × ${esc(prod(id).n)}`,eurFR(prod(id).price*items[id]))).join("")}<hr>
+ <div class="t">DÉTAIL DES COMMANDES</div>${list.map(o=>R(`n° ${o.no} · ${esc(o.slot.split("–")[0])} · ${o.mode==="delivery"?"Livr.":"C&amp;C"}<br><span class="sm">${esc(o.name)}</span>`,eurFR(orderTotal(o)))).join("")||'<div class="sm">Aucune commande aujourd\'hui.</div>'}<hr>
+ <div class="c sm">Ticket récapitulatif · démo, non fiscal</div><div class="c">Merci et à demain !</div>`;
+ return {html:t,open:open.length};
+}
+function openZ(){
+ const z=zTicket(),el=$("#zt");
+ el.innerHTML=`<div class="zt-in"><div class="zt-h"><h2>Encaisser la journée</h2><button type="button" class="zt-x" id="ztClose" aria-label="Fermer">×</button></div>
+  ${z.open?`<p class="zt-warn">${z.open} commande${z.open>1?"s":""} pas encore remise${z.open>1?"s":""} : elle${z.open>1?"s sont":" est"} comptée${z.open>1?"s":""} dans le total.</p>`:""}
+  <div class="ticket" id="ticket">${z.html}</div>
+  <div class="zt-acts"><button type="button" class="btn cu" id="ztPrint">Imprimer le ticket</button><p>S'imprime sur l'imprimante à tickets de la boutique (80 mm), choisie dans la fenêtre d'impression.</p></div></div>`;
+ el.hidden=false;document.body.style.overflow="hidden";
+}
+function closeZ(){$("#zt").hidden=true;document.body.style.overflow=""}
+function printZ(){document.body.classList.add("printing");const done=()=>{document.body.classList.remove("printing");window.removeEventListener("afterprint",done)};window.addEventListener("afterprint",done);setTimeout(()=>{window.print();setTimeout(done,1500)},50)}
 function deliveryPins(){return sortedOrders().filter(o=>o.mode==="delivery"&&o.status!=="done")}
 function mapGoogle(pins,zonesOnly){
  const enc=encodeURIComponent,sel=pins[0];
@@ -806,7 +878,7 @@ function mapGoogle(pins,zonesOnly){
  const dir=!zonesOnly&&pins.length?"https://www.google.com/maps/dir/?api=1&origin="+enc(SHOP_Q)+"&destination="+enc(orderQ(pins[pins.length-1]))+(pins.length>1?"&waypoints="+pins.slice(0,-1).map(o=>enc(orderQ(o))).join("%7C"):"")+"&travelmode=driving":"";
  return `<aside class="mapbox"${zonesOnly?' style="position:static;margin-top:22px;max-width:640px"':""}><div class="mh"><h2>${zonesOnly?"Nice et la boutique":"Livraisons du jour"}</h2><span class="muted" style="font-size:13px">${zonesOnly?"Google Maps":pins.length+" en cours"}</span></div>
  <iframe id="gmapFrame" src="${src}" title="Carte Google Maps" loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
- ${chips}${dir?`<a class="maplink" href="${dir}" target="_blank" rel="noopener">Ouvrir la tournée dans Google Maps →</a>`:""}</aside>`;
+ ${chips}${dir?`<a class="maplink" href="${dir}" target="_blank" rel="noopener">Ouvrir la tournée dans Google Maps →</a><a class="maplink" href="https://waze.com/ul?q=${enc(orderQ(pins[0]))}&navigate=yes" target="_blank" rel="noopener">1re livraison dans Waze →</a>`:""}</aside>`;
 }
 function mapSVG(){
  let s=`<aside class="mapbox" style="position:static;margin-top:22px;max-width:640px"><div class="mh"><h2>Zones autour de la boutique</h2><span class="muted" style="font-size:13px">Schéma</span></div>
@@ -868,13 +940,18 @@ document.addEventListener("click",e=>{
  if(b.id==="toAdmin"){closeSheet();S.tab="orders";S.filter="active";setView("gerant",true);return}
  if(b.id==="again"){closeSheet();return}
  if(b.id==="toTrack"){closeSheet();setView("suivi",true);return}
- if(b.id==="soundBtn"){S.sound=!S.sound;if(!S.sound)stopRing();if(S.sound){try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();actx.resume();beep()}catch(err){}}renderAdmin();return}
+ if(b.id==="soundBtn"){const wasPaused=S.sound&&!audioOk();if(!wasPaused)S.sound=!S.sound;try{localStorage.setItem(SOUND_KEY,S.sound?"1":"0")}catch(err){}
+  if(!S.sound)stopRing();else{unlockAudio();try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().catch(()=>{})}catch(err){}setTimeout(()=>{try{actx.resume()}catch(err){}beep()},60)}
+  setTimeout(updSoundBtn,200);updSoundBtn();return}
+ if(b.id==="ztBtn"){openZ();return}
+ if(b.id==="ztClose"){closeZ();return}
+ if(b.id==="ztPrint"){printZ();return}
  if(b.dataset.tab){S.tab=b.dataset.tab;renderAdmin();return}
  if(b.dataset.f){S.filter=b.dataset.f;renderAdmin();return}
- if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);ringCheck();renderAdmin();phoneNotice(o);mailStatus(o)}return}
+ if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);ringCheck();renderAdmin();mailStatus(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("#sheet").hidden)closeSheet()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#zt").hidden)closeZ();else if(!$("#sheet").hidden)closeSheet()}});
 document.addEventListener("change",e=>{
  const el=e.target;
  if(el.id==="q"){readFields();renderSheet();return}
@@ -896,7 +973,7 @@ document.documentElement.lang=S.lang;
 const h0=(location.hash||"").replace("#","");
 if(h0.indexOf("suivi-")===0)S.track=h0.slice(6);
 setView(h0==="gerant"?"gerant":(h0==="suivi"||h0.indexOf("suivi-")===0)?"suivi":"client",false);
-window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const fresh=d.orders.filter(o=>!known.has(o.no)&&o.status==="new").map(o=>o.code);S.orders=d.orders;S.seq=d.seq||S.seq;ringCheck();if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(fresh.length)ring(fresh)}}catch(err){}});
+window.addEventListener("storage",e=>{if(e.key!==KEY||!e.newValue)return;try{const d=JSON.parse(e.newValue);if(Array.isArray(d.orders)){const known=new Set(S.orders.map(o=>o.no));const fresh=d.orders.filter(o=>!known.has(o.no)&&o.status==="new").map(o=>o.code);S.orders=d.orders;S.seq=d.seq||S.seq;ringCheck();if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();if(fresh.length)alertNew(fresh)}}catch(err){}});
 
 /* ---------- synchronisation Supabase ---------- */
 const track0=S.track;
@@ -914,7 +991,7 @@ function mergeOrders(list,replace){
  S.seq=Math.max(S.seq,...S.orders.map(o=>o.no||0));
  persist();
  if(S.view==="suivi")renderSuivi();if(S.view==="gerant")renderAdmin();
- ringCheck();if(fresh.length)ring(fresh);
+ ringCheck();if(fresh.length)alertNew(fresh);
 }
 async function cloudFetch(first){
  const r=await sb.from(SB_TABLE).select("id,data");
