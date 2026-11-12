@@ -289,6 +289,16 @@ footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-betw
 .phone button.go{background:var(--bg);color:var(--fg);border-color:var(--bg)}
 .sound.warn{border-color:var(--st-new);color:var(--st-new)}
 .adm-btns{display:flex;flex-wrap:wrap;gap:8px}
+.soundbar{display:grid;gap:4px;width:100%;margin-top:16px;text-align:left;cursor:pointer;border:1px solid var(--st-new);background:rgba(201,138,78,.12);color:var(--fg);padding:14px 16px;font:inherit}
+.soundbar b{font-weight:500;color:var(--st-new)}
+.soundbar span{font-size:13px;color:var(--fg2)}
+.cfm{position:fixed;inset:0;z-index:95;background:rgba(10,8,6,.72);display:flex;align-items:center;justify-content:center;padding:16px}
+.cfm-in{background:var(--bg2);border:1px solid var(--line2);max-width:420px;width:100%;padding:24px;display:grid;gap:12px}
+.cfm-ic{font-size:30px;line-height:1}
+.cfm-in h2{font-size:26px}
+.cfm-in p{color:var(--fg2);font-size:15px}
+.cfm-in p b{color:var(--st-new);font-weight:500}
+.cfm-b{display:grid;gap:8px;margin-top:6px}
 .zt{position:fixed;inset:0;z-index:90;background:rgba(10,8,6,.72);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px}
 .zt-in{display:grid;gap:14px;width:100%;max-width:360px}
 .zt-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
@@ -350,6 +360,7 @@ body{margin:0}
 <section class="sheet" id="sheet" hidden aria-modal="true" role="dialog" aria-labelledby="shTitle"></section>
 <div class="toast" id="toast" hidden></div>
 <div class="phone" id="phone" hidden role="status" aria-live="polite"></div>
+<div class="cfm" id="cfm" hidden></div>
 <div class="zt" id="zt" hidden role="dialog" aria-modal="true" aria-label="Décompte de la journée"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.0/dist/umd/supabase.js"></script>
@@ -489,52 +500,89 @@ function dayLabel(dayIso,lang){return new Date(dayIso+"T12:00").toLocaleDateStri
 let toastT;function toast(msg){const el=$("#toast");el.textContent=msg;el.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>el.hidden=true,2200)}
 
 /* ---------- son (alerte nouvelle commande) ---------- */
-let actx=null;
-let bus=null;
-function chime(t0){
+let actx=null,bus=null;
+function chime(ctx,dest,t0){
  [[659.25,0],[830.61,.11],[987.77,.22],[1318.51,.33]].forEach(([f,o],i,a)=>{
   const t=t0+o,dur=i===a.length-1?0.9:0.35;
   [[1,"triangle",.55],[2,"sine",.18],[3,"sine",.06]].forEach(([m,type,v])=>{
-   const os=actx.createOscillator(),g=actx.createGain();
+   const os=ctx.createOscillator(),g=ctx.createGain();
    os.type=type;os.frequency.value=f*m;
    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(v,t+0.008);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-   os.connect(g).connect(bus);os.start(t);os.stop(t+dur+0.02);
+   os.connect(g).connect(dest);os.start(t);os.stop(t+dur+0.02);
   });
  });
 }
-function beep(at){if(!S.sound||!actx)return;try{
- if(!bus){const comp=actx.createDynamicsCompressor(),out=actx.createGain();comp.threshold.value=-18;comp.ratio.value=6;out.gain.value=1.4;comp.connect(out).connect(actx.destination);bus=comp}
- const now=at||actx.currentTime+0.02;[0,1.1,2.2].forEach(d=>chime(now+d));
+function mkBus(ctx){const comp=ctx.createDynamicsCompressor(),out=ctx.createGain();comp.threshold.value=-18;comp.ratio.value=6;out.gain.value=1.4;comp.connect(out).connect(ctx.destination);return comp}
+/* La sonnerie de 30 s est fabriquée une fois en vrai fichier audio (WAV) :
+   Safari et l'app du Dock jouent un fichier audio autorisé par un clic bien plus fiablement qu'un son généré. */
+const RING_LEAD=0.25,RING_STEP=3.4,RING_N=9;
+let ringAudio=null,audioUnlocked=false,aMode="";
+function toWav(buf){
+ const d=buf.getChannelData(0),n=d.length,sr=buf.sampleRate,v=new DataView(new ArrayBuffer(44+n*2));
+ const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+ w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+ v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+ for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,d[i]));v.setInt16(44+i*2,x<0?x*0x8000:x*0x7fff,true)}
+ return new Blob([v.buffer],{type:"audio/wav"});
+}
+function buildRing(){try{
+ const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!OAC)return;
+ const sr=22050,oc=new OAC(1,Math.ceil(sr*(RING_LEAD+(RING_N-1)*RING_STEP+3.4)),sr),dest=mkBus(oc);
+ for(let k=0;k<RING_N;k++)[0,1.1,2.2].forEach(d=>chime(oc,dest,RING_LEAD+k*RING_STEP+d));
+ const done=buf=>{const el=new Audio(URL.createObjectURL(toWav(buf)));el.preload="auto";el.addEventListener("ended",()=>{aMode="";ringCodes.clear()});ringAudio=el};
+ const pr=oc.startRendering();if(pr&&pr.then)pr.then(done,()=>{});else oc.oncomplete=e=>done(e.renderedBuffer);
 }catch(e){}}
+function playRing(mode,onFail){
+ const el=ringAudio;if(!el){onFail();return}
+ aMode=mode;try{el.currentTime=0}catch(e){}
+ const pr=el.play();
+ const ok=()=>{audioUnlocked=true;updSoundBtn();if(mode==="test")setTimeout(()=>{if(aMode==="test"){el.pause();aMode=""}},(RING_LEAD+3.4)*1000)};
+ if(pr&&pr.then)pr.then(ok,()=>{aMode="";onFail()});else ok();
+}
+/* courte sonnerie (test à l'activation) */
+function beepWA(){if(!actx)return;try{if(!bus)bus=mkBus(actx);const t=actx.currentTime+0.02;[0,1.1,2.2].forEach(d=>chime(actx,bus,t+d))}catch(e){}}
+function beep(){if(!S.sound)return;playRing("test",beepWA)}
 /* préférence mémorisée + déblocage du son au premier clic (Safari / app du Dock coupe le son tant qu'on n'a pas cliqué) */
-const SOUND_KEY="ole_sound";
-try{S.sound=localStorage.getItem(SOUND_KEY)==="1"}catch(e){}
-function audioOk(){return !!actx&&actx.state==="running"}
-function unlockAudio(){if(!S.sound)return;try{if(!actx){actx=new (window.AudioContext||window.webkitAudioContext)();actx.onstatechange=updSoundBtn}if(actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})}catch(e){}}
-function soundBtnHTML(){const w=S.sound&&!audioOk();return `<button type="button" class="sound${S.sound?(w?" warn":" on"):""}" id="soundBtn"><span aria-hidden="true">${S.sound?(w?"🔇":"🔔"):"🔕"}</span>${S.sound?(w?"Son en pause · cliquez pour réactiver":"Alerte sonore activée"):"Activer l'alerte sonore"}</button>`}
-function updSoundBtn(){const b=document.getElementById("soundBtn");if(b)b.outerHTML=soundBtnHTML()}
-["pointerdown","keydown","touchstart"].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
+S.sound=true; /* la sonnerie est toujours activée à l'ouverture */
+function audioOk(){return audioUnlocked||(!!actx&&actx.state==="running"&&!ringAudio)}
+function unlockAudio(){
+ if(!S.sound)return;
+ try{if(!actx){actx=new (window.AudioContext||window.webkitAudioContext)();actx.onstatechange=updSoundBtn}if(actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})}catch(e){}
+ const el=ringAudio;
+ if(el&&!audioUnlocked&&!aMode){aMode="unlock";el.muted=false;const pr=el.play();
+  const ok=()=>{if(aMode==="unlock"){el.pause();try{el.currentTime=0}catch(e){}aMode=""}audioUnlocked=true;updSoundBtn()};
+  if(pr&&pr.then)pr.then(ok,()=>{if(aMode==="unlock")aMode=""});else ok()}
+}
+function soundBtnHTML(){const w=S.sound&&!audioOk();return `<button type="button" class="sound${S.sound?(w?" warn":" on"):" warn"}" id="soundBtn"><span aria-hidden="true">${S.sound?(w?"🔇":"🔔"):"🔕"}</span>${S.sound?(w?"Cliquez ici pour activer la sonnerie":"Sonnerie activée"):"Sonnerie coupée · cliquez pour la remettre"}</button>`}
+function soundBarHTML(){return S.sound&&!audioOk()?`<button type="button" class="soundbar" id="soundBar"><b>🔔 Cliquez n'importe où pour activer la sonnerie</b><span>Le navigateur bloque le son tant qu'on n'a pas cliqué une fois dans la page.</span></button>`:""}
+function updSoundBtn(){const b=document.getElementById("soundBtn");if(b)b.outerHTML=soundBtnHTML();const sb=document.getElementById("soundBar");if(sb&&!soundBarHTML())sb.remove()}
+["pointerdown","mousedown","touchend","keydown","click"].forEach(ev=>document.addEventListener(ev,unlockAudio,{capture:true,passive:true}));
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&actx&&actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})});
 window.addEventListener("focus",()=>{if(actx&&actx.state!=="running")actx.resume().then(updSoundBtn,()=>{})});
+buildRing();
 function notifyNew(codes){
  if(!S.sound||!("Notification" in window)||Notification.permission!=="granted")return;
  codes.forEach(c=>{const o=S.orders.find(x=>x.code===c);if(!o)return;
   try{const n=new Notification(`Nouvelle commande n° ${o.no} · Olé`,{body:`${o.name} · ${o.mode==="delivery"?"Livraison":"Click & Collect"} ${o.slot} · ${eurFR(orderTotal(o))}`,tag:"ole-"+o.code,requireInteraction:true});n.onclick=()=>{window.focus();n.close()}}catch(e){}});
 }
 function alertNew(codes){notifyNew(codes);ring(codes)}
-/* sonnerie : se répète pendant 30 s tant que la nouvelle commande n'est pas acceptée.
-   Tout est programmé d'avance sur l'horloge audio (pas ralentie quand la fenêtre est en arrière-plan). */
+/* sonnerie : environ 30 s tant que la nouvelle commande n'est pas acceptée */
 let ringUntil=0;const ringCodes=new Set();
-function stopRing(){ringCodes.clear();ringUntil=0;if(bus){try{bus.disconnect()}catch(e){}bus=null}}
+function stopRing(){ringCodes.clear();ringUntil=0;if(ringAudio&&aMode==="ring"){try{ringAudio.pause();ringAudio.currentTime=0}catch(e){}aMode=""}if(bus){try{bus.disconnect()}catch(e){}bus=null}}
 function ringCheck(){if(!ringCodes.size)return;ringCodes.forEach(c=>{const o=S.orders.find(x=>x.code===c);if(!o||o.status!=="new")ringCodes.delete(c)});if(!ringCodes.size)stopRing()}
-function ring(codes){
- if(!S.sound||!actx)return;
- codes.forEach(c=>ringCodes.add(c));
+function ringWA(){
+ if(!actx)return;
  try{actx.resume()}catch(e){}
+ if(!bus)bus=mkBus(actx);
  const now=actx.currentTime+0.02,end=now+30;
  let t=Math.max(now,ringUntil);
- while(t+3.2<=end){beep(t);t+=3.4}
+ while(t+3.2<=end){[0,1.1,2.2].forEach(d=>chime(actx,bus,t+d));t+=RING_STEP}
  ringUntil=t;
+}
+function ring(codes){
+ if(!S.sound)return;
+ codes.forEach(c=>ringCodes.add(c));
+ playRing("ring",ringWA);
 }
 
 /* ---------- commandes d'exemple ---------- */
@@ -787,6 +835,7 @@ function renderAdmin(){
  let h=`<div class="adm gut"><div class="wrap">
   <div class="adm-h"><div><p class="over">Olé · gestion</p><h1>${new Date().toLocaleDateString("fr-FR",{weekday:"long",day:"numeric",month:"long"})}</h1></div>
   <div class="adm-btns">${soundBtnHTML()}<button type="button" class="sound" id="ztBtn"><span aria-hidden="true">🧾</span>Encaisser la journée</button></div></div>
+  ${soundBarHTML()}
   <div class="tabs" role="tablist">
    <button type="button" id="t-orders" data-tab="orders" class="${S.tab==="orders"?"on":""}">Commandes${nNew?`<span class="cnt">${nNew}</span>`:""}</button>
    <button type="button" id="t-carte" data-tab="carte" class="${S.tab==="carte"?"on":""}">Carte &amp; prix</button>
@@ -868,6 +917,8 @@ function openZ(){
   <div class="zt-acts"><button type="button" class="btn cu" id="ztPrint">Imprimer le ticket</button><p>S'imprime sur l'imprimante à tickets de la boutique (80 mm), choisie dans la fenêtre d'impression.</p></div></div>`;
  el.hidden=false;document.body.style.overflow="hidden";
 }
+function openCfm(){const el=$("#cfm");el.innerHTML=`<div class="cfm-in" role="alertdialog" aria-modal="true" aria-labelledby="cfmT" aria-describedby="cfmD"><p class="cfm-ic" aria-hidden="true">🔕</p><h2 id="cfmT">Couper la sonnerie ?</h2><p id="cfmD"><b>Attention :</b> vous n'entendrez plus les nouvelles commandes. Elles s'afficheront quand même à l'écran, mais sans alerte sonore jusqu'à ce que vous réactiviez le son.</p><div class="cfm-b"><button type="button" class="btn cu" id="cfmKeep">Garder le son</button><button type="button" class="btn" id="cfmOff">Couper quand même</button></div></div>`;el.hidden=false;const k=document.getElementById("cfmKeep");if(k)k.focus()}
+function closeCfm(){$("#cfm").hidden=true}
 function closeZ(){$("#zt").hidden=true;document.body.style.overflow=""}
 function printZ(){document.body.classList.add("printing");const done=()=>{document.body.classList.remove("printing");window.removeEventListener("afterprint",done)};window.addEventListener("afterprint",done);setTimeout(()=>{window.print();setTimeout(done,1500)},50)}
 function deliveryPins(){return sortedOrders().filter(o=>o.mode==="delivery"&&o.status!=="done")}
@@ -940,9 +991,15 @@ document.addEventListener("click",e=>{
  if(b.id==="toAdmin"){closeSheet();S.tab="orders";S.filter="active";setView("gerant",true);return}
  if(b.id==="again"){closeSheet();return}
  if(b.id==="toTrack"){closeSheet();setView("suivi",true);return}
- if(b.id==="soundBtn"){const wasPaused=S.sound&&!audioOk();if(!wasPaused)S.sound=!S.sound;try{localStorage.setItem(SOUND_KEY,S.sound?"1":"0")}catch(err){}
-  if(!S.sound)stopRing();else{unlockAudio();try{if("Notification" in window&&Notification.permission==="default")Notification.requestPermission().catch(()=>{})}catch(err){}setTimeout(()=>{try{actx.resume()}catch(err){}beep()},60)}
-  setTimeout(updSoundBtn,200);updSoundBtn();return}
+ if(b.id==="soundBtn"){
+  if(S.sound&&audioOk()){openCfm();return}
+  if(!S.sound){S.sound=true}
+  if(aMode==="unlock"){aMode=""}beep();unlockAudio();
+  try{if("Notification" in window&&Notification.permission==="default"){const np=Notification.requestPermission();if(np&&np.catch)np.catch(()=>{})}}catch(err){}
+  updSoundBtn();return}
+ if(b.id==="soundBar"){if(aMode==="unlock"){aMode=""}beep();unlockAudio();try{if("Notification" in window&&Notification.permission==="default"){const np=Notification.requestPermission();if(np&&np.catch)np.catch(()=>{})}}catch(err){}return}
+ if(b.id==="cfmKeep"){closeCfm();return}
+ if(b.id==="cfmOff"){S.sound=false;stopRing();closeCfm();updSoundBtn();return}
  if(b.id==="ztBtn"){openZ();return}
  if(b.id==="ztClose"){closeZ();return}
  if(b.id==="ztPrint"){printZ();return}
@@ -951,7 +1008,7 @@ document.addEventListener("click",e=>{
  if(b.dataset.adv){const o=S.orders.find(x=>x.no===+b.dataset.adv);if(o&&NEXT[o.status]){o.status=NEXT[o.status][0];o.fresh=false;o.times=o.times||{};o.times[o.status]=Date.now();persist();cloudSave(o);ringCheck();renderAdmin();mailStatus(o)}return}
 });
 $("#scrim").addEventListener("click",closeSheet);
-document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#zt").hidden)closeZ();else if(!$("#sheet").hidden)closeSheet()}});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#cfm").hidden)closeCfm();else if(!$("#zt").hidden)closeZ();else if(!$("#sheet").hidden)closeSheet()}});
 document.addEventListener("change",e=>{
  const el=e.target;
  if(el.id==="q"){readFields();renderSheet();return}
